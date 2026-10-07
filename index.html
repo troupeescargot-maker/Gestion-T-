@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#3b0764"><meta name="description" content="Gestion T — Application de gestion de troupe scoute">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gestion T">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gestion T — Troupe</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--g:#5b21b6;--g2:#7c3aed;--gold:#a855f7;--bg:#f7f5fc;--card:#fff;--text:#1e1b2e;--muted:#716b85;--line:#e6e1f5}
+*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#3b0764,#7c3aed);color:#fff;padding:22px 20px;position:sticky;top:0;z-index:5;box-shadow:0 4px 20px #3b076433}
+header .brand{display:flex;align-items:center;gap:12px}
+header .logo{width:46px;height:46px;border-radius:13px;display:block;box-shadow:0 2px 10px #0003}
+header h1{margin:0;font-size:22px;letter-spacing:.3px;font-weight:800}header p{margin:3px 0 0;opacity:.88;font-size:13px}
+main{max-width:1200px;margin:auto;padding:20px 16px 92px}
+.toolbar{display:flex;gap:9px;margin:10px 0 18px}.toolbar input{flex:1}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:15px;color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--g2);outline-offset:1px}
+button{border:0;border-radius:10px;background:var(--g);color:#fff;padding:11px 14px;font-weight:700;cursor:pointer;transition:filter .15s}button:hover{filter:brightness(1.08)}button.secondary{background:#efeaf9;color:var(--g)}button.danger{background:#a52b5f}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card,.panel{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 18px #3b076412;border:1px solid var(--line);transition:box-shadow .15s,transform .1s}
+.member{text-align:center;cursor:pointer}.member:hover{box-shadow:0 8px 26px #3b076422;transform:translateY(-2px)}
+.avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;background:#efeaf9;margin:auto;display:block;border:3px solid #f3effc}
+.module{min-height:150px;cursor:pointer;text-align:center}.module:hover{box-shadow:0 8px 26px #3b076422;transform:translateY(-2px)}
+.module .icon{font-size:26px;width:56px;height:56px;line-height:56px;border-radius:50%;margin:0 auto 10px;background:var(--g);color:#fff}
+.module.finance .icon{background:#b45309}.module.presence .icon{background:#0f766e}.module.evolution .icon{background:#3b0764}
+.badge{display:inline-block;background:#efeaf9;color:var(--g);padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.tablewrap{overflow:auto}.table{border-collapse:collapse;width:100%;background:#fff;font-size:13px}.table th,.table td{border:1px solid var(--line);padding:7px;text-align:center}.table th{background:#f3effc;position:sticky;top:0}.ok{background:#dcfce7}.bad{background:#fee2e2}.warn{background:#ffedd5}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{text-align:center;background:#fff;padding:15px;border-radius:14px;border:1px solid var(--line)}.num{font-size:27px;font-weight:800;color:var(--g)}
+.stat.clickable{cursor:pointer;transition:box-shadow .15s,transform .1s}.stat.clickable:hover{box-shadow:0 8px 22px #3b076422;transform:translateY(-2px)}
+.infogrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;text-align:left;margin-top:14px}
+.infoitem{background:#f3effc;border-radius:12px;padding:9px 12px}
+.infoitem .lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.infoitem .val{font-size:14px;margin-top:2px;word-break:break-word}
+.stories{display:flex;gap:16px;overflow-x:auto;padding:6px 2px 16px;-webkit-overflow-scrolling:touch}
+.story{flex:0 0 auto;text-align:center;width:78px;cursor:pointer}
+.story .ring{width:70px;height:70px;border-radius:50%;padding:3px;margin:auto;display:flex;align-items:center;justify-content:center}
+.story .ring img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#efeaf9;display:block}
+.story .name{font-size:11px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78px}
+.story .sub{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78px}
+.mod-ic{width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:28px}
+.menubar{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch}
+.menubar button{flex:0 0 auto;border-radius:999px;padding:9px 14px;font-size:13px;white-space:nowrap}
+.autost{font-size:12px;color:var(--muted);margin:2px 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chips button{padding:6px 12px;font-size:12px;border-radius:999px}
+@media(max-width:520px){.infogrid{grid-template-columns:1fr}}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:7px;z-index:6;box-shadow:0 -2px 14px #3b076412}.bottom button{background:transparent;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}.bottom button.active{color:var(--g);font-weight:800;background:#f3effc}
+.bottom.scroll{justify-content:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:4px}
+.bottom .home-ic{display:flex;justify-content:center}
+.patrol-tile{cursor:pointer;text-align:center;padding:0;overflow:hidden}
+.patrol-tile .cover{width:100%;height:110px;object-fit:cover;display:block;background:#efeaf9}
+.patrol-tile .lbl{padding:10px;font-weight:800;font-size:13px}
+.modal{position:fixed;inset:0;background:#1e1b2ecc;z-index:20;display:none;overflow:auto;padding:16px}.modal.open{display:block}.modalbox{background:var(--bg);max-width:850px;margin:auto;border-radius:18px;padding:17px}.back{background:#efeaf9;color:var(--g);margin-bottom:12px}
+label{font-size:13px;font-weight:700;display:block;margin:9px 0 4px}
+@media(max-width:750px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.module{min-height:120px}}
+@media(min-width:751px){.bottom{display:none}}
+header h1[contenteditable]{outline:none;cursor:text;border-bottom:1px dashed #ffffff66;display:inline-block;min-width:40px}
+header h1[contenteditable]::after{content:" ";font-size:12px;opacity:.6}
+.pagehead{display:flex;justify-content:space-between;align-items:center;margin:8px 0 12px}
+.menuwrap{position:relative}
+.dots{background:transparent;color:var(--text);font-size:28px;line-height:1;padding:2px 12px;border-radius:50%}
+.dots:hover{background:#efeaf9;filter:none}
+.dropdown{display:none;position:absolute;right:0;top:100%;min-width:240px;background:#fff;border-radius:12px;box-shadow:0 8px 30px #1e1b2e55;padding:6px 0;z-index:30;border:1px solid var(--line);transform-origin:top right}
+.dropdown.open{display:block;animation:pop .13s ease-out}
+.dropdown button{display:block;width:100%;text-align:left;background:transparent;color:var(--text);border-radius:0;padding:13px 18px;font-weight:500;font-size:15px}
+.dropdown button:hover{background:#f3effc;filter:none}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pageIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+.page-enter{animation:pageIn .22s ease-out}
+@keyframes modalIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+.modalbox.mb-anim{animation:modalIn .2s ease-out}
+*{-webkit-tap-highlight-color:transparent}
+button,.story,.card{-webkit-user-select:none;user-select:none}
+#lockScreen{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#3b0764,#7c3aed);display:flex;align-items:center;justify-content:center;padding:20px}
+#lockScreen.hidden{display:none}
+.lockbox{background:#fff;border-radius:22px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px #0006}
+.lockbox img{width:76px;height:76px;border-radius:20px;box-shadow:0 4px 16px #3b076444}
+.lockbox h2{margin:12px 0 4px}.lockbox p{color:var(--muted);font-size:13px;margin:0 0 14px}
+#lockErr{color:#a52b2b;font-weight:700;min-height:20px;margin:8px 0}
+.lockbox input{text-align:center;font-size:18px;letter-spacing:3px}
+</style>
+</head>
+<body>
+<header><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div class="brand"><img class="logo" src="icon-192.png" alt="Gestion T"><div><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.75;font-weight:700">Gestion T</div><h1 id="troupeNom" contenteditable="true" spellcheck="false" onblur="saveTroupeNom(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Troupe</h1><p>Groupe Scout Kafubu Saint Théodore</p></div></div></div></header>
+<main>
+<section id="membersPage"><div class="pagehead"><h2 style="margin:0">MEMBRES</h2><div class="menuwrap"><button class="dots" onclick="toggleDrop(event,'dropYear')" aria-label="Année et thèmes">⋮</button><div class="dropdown" id="dropYear" style="padding:14px 16px;width:260px">
+<label style="margin-top:0">Année</label><input id="setAnnee" placeholder="Ex : 2026-2027" oninput="saveYearInfo()">
+<label>Thème général de l'année</label><input id="setThemeG" placeholder="Thème général de l'année" oninput="saveYearInfo()">
+<label>Thème de la branche</label><input id="setThemeB" placeholder="Thème de la branche" oninput="saveYearInfo()">
+</div></div></div>
+<div class="toolbar"><input id="q" placeholder="Rechercher un nom, prénom, totem ou patrouille" oninput="renderMembers()"><button onclick="memberForm()">＋</button><button class="secondary" onclick="document.getElementById('shareImportInput').click()">Importer</button></div>
+<input type="file" id="shareImportInput" accept="application/json" style="display:none" onchange="restoreSharedData(this.files[0])">
+<div class="toolbar">
+<select id="sortBy" onchange="renderMembers()"><option value="nom">Trier : Nom</option><option value="patrouille">Trier : Patrouille</option><option value="etape">Trier : Étape</option><option value="fonction">Trier : Fonction</option></select>
+<select id="filterHP" onchange="renderMembers()"><option value="">Tous les scouts</option><option value="hp">Haute Patrouille uniquement</option></select>
+</div>
+<div id="members" class="stories"></div></section>
+<section id="statsPage" style="display:none">
+<button class="secondary" onclick="go('maitrisePage')">← Retour</button>
+<h2>Tableau de bord</h2>
+<h3 style="margin-bottom:6px">Membres</h3><div id="statsMembers" class="stats"></div>
+<h3 style="margin:18px 0 6px">Présence</h3><div id="statsPresence" class="stats" style="grid-template-columns:1fr"></div>
+<h3 style="margin:18px 0 6px">Finance — Jeunes</h3><div id="statsFinanceYouth" class="stats" style="grid-template-columns:repeat(3,1fr)"></div>
+<div class="panel" style="margin-top:10px;text-align:center"><canvas id="pieYouth" height="200" style="display:block;margin:10px auto;max-width:260px"></canvas></div>
+<h3 style="margin:18px 0 6px">Finance — Chefs (Maîtrise)</h3><div id="statsFinanceChief" class="stats" style="grid-template-columns:repeat(3,1fr)"></div>
+<div class="panel" style="margin-top:10px;text-align:center"><canvas id="pieChief" height="200" style="display:block;margin:10px auto;max-width:260px"></canvas></div>
+<h3 style="margin:18px 0 6px">Répartition par patrouille</h3>
+<div class="panel"><div id="patrolCircles" style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:16px"></div></div>
+</section>
+<section id="maitrisePage" style="display:none"><div class="pagehead"><h2 style="margin:0">MAÎTRISE <span class="badge">Accès chef</span></h2><div class="menuwrap"><button class="dots" onclick="toggleDrop(event,'dropMenu')" aria-label="Menu">⋮</button><div class="dropdown" id="dropMenu">
+<button onclick="closeMenu();go('statsPage');renderStats()">Statistiques</button>
+<button onclick="closeMenu();showYouthList()">Liste jeunes</button>
+<button onclick="closeMenu();showGeneralList()">Liste générale</button>
+<button onclick="closeMenu();showChiefList()">Liste chefs</button>
+<button onclick="closeMenu();editPatrouilles()">Patrouilles</button>
+<button onclick="closeMenu();openDocuments()">Documents</button>
+<button onclick="closeMenu();exportExcel()">Excel</button>
+<button onclick="closeMenu();exportPDF()">PDF</button>
+<button onclick="closeMenu();changeCodeDialog('app')">Mot de passe app</button>
+<button onclick="closeMenu();changeCodeDialog('maitrise')">Code Maîtrise</button>
+<button onclick="closeMenu();sharePatrolLink()">Partager</button>
+<button onclick="closeMenu();openTrash()">Corbeille</button>
+<button onclick="closeMenu();lockApp()">Verrouiller l'application</button>
+<button onclick="exitMaitrise()">Retour</button>
+</div></div></div>
+<div class="toolbar"><input id="qm" placeholder="Rechercher un nom, prénom ou fonction" oninput="renderMaitrise()"><button onclick="chiefForm()">＋</button></div>
+<div id="maitrise" class="stories"></div></section>
+<section id="homePage" style="display:none"><h2>PATROUILLES</h2><p style="color:var(--muted);margin-top:-6px;font-size:13px">Touchez une patrouille pour voir ou ajouter des photos.</p><div id="homeGrid" class="grid"></div></section>
+</main>
+<nav class="bottom" id="bottomNav"></nav>
+<div id="modal" class="modal"><div id="modalbox" class="modalbox"></div></div>
+<div id="lockScreen"><div class="lockbox"><img src="icon-192.png" alt=""><h2>Gestion T</h2><p>Entrez le mot de passe pour ouvrir l'application.</p><input type="password" id="lockInput" placeholder="Mot de passe" autocomplete="off" oninput="unlockApp()"><div id="lockErr"></div></div></div>
+<script>
+const NB_MOIS=11;
+const months=Array.from({length:NB_MOIS},(_,i)=>`Mois ${i+1}`);
+const PAT_BASE=[{bg:"#2f7d32",fg:"#ffffff",border:"#2f7d32"},{bg:"#1d4ed8",fg:"#facc15",border:"#1d4ed8"},{bg:"#c1272d",fg:"#ffffff",border:"#c1272d"},{bg:"#ffffff",fg:"#2f7d32",border:"#2f7d32"},{bg:"#7c3aed",fg:"#ffffff",border:"#7c3aed"},{bg:"#ea580c",fg:"#ffffff",border:"#ea580c"},{bg:"#0f766e",fg:"#ffffff",border:"#0f766e"},{bg:"#db2777",fg:"#ffffff",border:"#db2777"},{bg:"#0284c7",fg:"#ffffff",border:"#0284c7"},{bg:"#d97706",fg:"#ffffff",border:"#d97706"},{bg:"#111827",fg:"#ffffff",border:"#111827"},{bg:"#65a30d",fg:"#ffffff",border:"#65a30d"}];
+let PATROUILLES=["Antilopes","Castors","Buffles","Lynx"];
+let PATROUILLE_COLORS={};
+function rebuildPatColors(){PATROUILLE_COLORS={};PATROUILLES.forEach((p,i)=>{PATROUILLE_COLORS[p]=PAT_BASE[i%PAT_BASE.length]})}
+rebuildPatColors();
+const MOD_GRAD={finance:"linear-gradient(45deg,#b45309,#fbbf24)",presence:"linear-gradient(45deg,#0f766e,#4ade80)",evolution:"linear-gradient(45deg,#5b21b6,#e879f9)"};
+function modStory(ic,label,fn,grad){return `<div class="story" style="width:88px" onclick="${fn}"><div class="ring" style="width:76px;height:76px;background:${grad}"><div class="mod-ic">${ic}</div></div><div class="name" style="font-size:12px;font-weight:700;max-width:88px">${label}</div></div>`}
+const ETAPES=["Novice","2e classe","1re classe"];
+const ETAPE_SLUG={"Novice":"nov","2e classe":"c2","1re classe":"c1"};
+const FONCTIONS_MAITRISE=["Chef de troupe","Sous-chef de troupe","Assistant(e)","Aumônier","Financier","Secrétaire","Média et communication","Projeunes","Intendant","Autre"];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function patBadge(p){if(!p)return "";let c=PATROUILLE_COLORS[p]||{bg:"#69746c",fg:"#fff",border:"#69746c"};return `<span style="display:inline-block;padding:3px 10px;border-radius:999px;color:${c.fg};background:${c.bg};border:2px solid ${c.border}">${esc(p)}</span>`}
+function renderHome(){let el=document.getElementById("homeGrid");if(!el)return;
+el.className="stories";
+el.innerHTML=PATROUILLES.map(p=>{let cover=(db.settings.patrolCovers||{})[p]||"";let c=PATROUILLE_COLORS[p]||{bg:"#69746c",fg:"#fff"};
+return `<div class="story" onclick="openPatrolGallery('${p.replace(/'/g,"\\'")}')"><div class="ring" style="background:${c.bg}">${cover?`<img src="${cover}">`:`<div class="mod-ic" style="background:transparent;color:${c.fg};font-weight:800">${esc((p[0]||"?").toUpperCase())}</div>`}</div><div class="name">${esc(p).toUpperCase()}</div></div>`}).join("")||'<div class=panel>Aucune patrouille.</div>'}
+let curAlbum=null;
+function albumsOf(p){let s=new Set(["Général"]);(db.photos||[]).filter(x=>x.patrouille===p).forEach(x=>s.add(x.album||"Général"));return [...s]}
+function openPatrolGallery(p){let albums=albumsOf(p);if(!curAlbum||!albums.includes(curAlbum))curAlbum=albums[0];
+let photos=(db.photos||[]).filter(x=>x.patrouille===p&&(x.album||"Général")===curAlbum);
+let pEsc=p.replace(/'/g,"\\'");
+modalbox.innerHTML=`<button class=back onclick="closeModal()">Retour</button><h2>${esc(p).toUpperCase()}</h2>
+<input type=file id=photoInput accept="image/*" multiple style="display:none" onchange="addPatrolPhoto('${pEsc}',this.files)">
+<input type=file id=coverInput accept="image/*" style="display:none" onchange="setPatrolCover('${pEsc}',this.files[0])">
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button onclick="document.getElementById('photoInput').click()">Ajouter une photo</button><button class="secondary" onclick="document.getElementById('coverInput').click()">Changer la photo de couverture</button><button class="secondary" onclick="sharePatrolLink()">Partager</button></div>
+<div class=chips>${albums.map(a=>`<button class="${a===curAlbum?"":"secondary"}" onclick="switchAlbum('${pEsc}','${a.replace(/'/g,"\\'")}')">${esc(a)}</button>`).join("")}<button class="secondary" onclick="addAlbum('${pEsc}')">＋ Album</button></div>
+<div class=grid id=photoGrid>${photos.map(ph=>`<div class=card style="padding:0;overflow:hidden;position:relative"><img src="${ph.data}" style="width:100%;height:140px;object-fit:cover;display:block;cursor:pointer" onclick="openLightbox('${ph.id}')"><button class=danger style="position:absolute;top:6px;right:6px;padding:4px 9px;font-size:12px" onclick="event.stopPropagation();deletePhoto('${ph.id}','${pEsc}')">X</button></div>`).join("")||'<p style="color:var(--muted)">Aucune photo dans cet album pour le moment.</p>'}</div>`;openModal()}
+function switchAlbum(p,a){curAlbum=a;openPatrolGallery(p)}
+async function addAlbum(p){let n=prompt("Nom du nouvel album :");if(!n||!n.trim())return;curAlbum=n.trim();openPatrolGallery(p)}
+function addPatrolPhoto(p,files){if(!files||!files.length)return;let album=curAlbum||"Général";let jobs=[...files].map(f=>new Promise(res=>{let r=new FileReader();r.onload=()=>res({id:crypto.randomUUID(),patrouille:p,album,data:r.result,date:new Date().toISOString()});r.readAsDataURL(f)}));
+Promise.all(jobs).then(async list=>{for(const ph of list){db.photos.push(ph);await idbPut(ph,"photos")}openPatrolGallery(p)})}
+async function deletePhoto(id,p){if(!confirm("Supprimer cette photo ?"))return;db.photos=db.photos.filter(x=>x.id!==id);await idbDelete(id,"photos");openPatrolGallery(p)}
+async function setPatrolCover(p,file){if(!file)return;let data=await new Promise(res=>{let r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file)});
+if(!db.settings.patrolCovers)db.settings.patrolCovers={};db.settings.patrolCovers[p]=data;await saveSettings();renderHome();openPatrolGallery(p)}
+function openLightbox(id){let ph=(db.photos||[]).find(x=>x.id===id);if(!ph)return;
+let ov=document.createElement("div");ov.id="lightbox";
+ov.style.cssText="position:fixed;inset:0;background:#000e;z-index:60;display:flex;align-items:center;justify-content:center;padding:18px";
+ov.innerHTML=`<img src="${ph.data}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px">`;
+ov.onclick=()=>ov.remove();
+document.body.appendChild(ov)}
+function buildShareData(){let copy=JSON.parse(JSON.stringify(db));delete copy.maitrise;if(copy.settings){delete copy.settings.code;delete copy.settings.appCode;delete copy.settings.appPassword}return copy}
+async function restoreSharedData(file){if(!file)return;
+try{let text=await file.text(),data=JSON.parse(text);
+if(Array.isArray(data.members)){db.members=data.members;for(const m of db.members)await idbPut(m)}
+if(Array.isArray(data.photos)){db.photos=data.photos;for(const ph of db.photos)await idbPut(ph,"photos")}
+if(data.templates){db.templates=data.templates;for(const e of ETAPES)if(db.templates[e])await idbPut({etape:e,epreuves:db.templates[e]},"templates")}
+if(Array.isArray(data.documents))for(const d of data.documents)await idbPut(d,"documents");
+if(data.settings){let incoming={...data.settings};delete incoming.code;delete incoming.appCode;delete incoming.appPassword;db.settings={...db.settings,...incoming};await saveSettings();
+if(Array.isArray(db.settings.patrouilles)&&db.settings.patrouilles.length){PATROUILLES=db.settings.patrouilles.slice();rebuildPatColors()}}
+renderMembers();fillHomeFields();document.getElementById("shareImportInput").value="";
+alert("Données importées avec succès. La Maîtrise reste protégée par son propre code sur cet appareil.")}
+catch(e){console.error(e);alert("Ce fichier n'a pas pu être lu. Vérifiez qu'il s'agit bien d'un fichier exporté depuis Gestion T.")}}
+async function sharePatrolLink(){let url=location.href;
+let blob=new Blob([JSON.stringify(buildShareData())],{type:"application/json"}),file=new File([blob],"GestionT_donnees.json",{type:"application/json"});
+let msg="Application Gestion T. Ouvrez le lien, puis appuyez sur Importer (page Membres) pour retrouver les membres et les photos. La Maîtrise reste protégée par son propre code sur chaque appareil.";
+if(navigator.canShare&&navigator.canShare({files:[file]})){
+try{await navigator.share({title:"Gestion T",text:msg,url,files:[file]});return}catch(e){if(e&&e.name==="AbortError")return}
+}
+if(navigator.share){try{await navigator.share({title:"Gestion T",text:msg,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="GestionT_donnees.json";a.click();
+navigator.clipboard?.writeText(url);
+alert("Lien copié et fichier de données téléchargé. Envoyez les deux : le lien pour ouvrir l'application, le fichier à importer ensuite pour retrouver les membres et les photos. La Maîtrise restera protégée par son code.")}
+let db={members:[],maitrise:[],settings:{key:"config",code:"1234"},templates:{}},cur=null,curChef=null,maitriseUnlocked=false,curKind="member";
+let formMemberId=null,formChiefId=null,persisting=false,autoTimer=null,docsCache=[],docCatSel="__all__",docSort="date";
+async function withLock(fn){while(persisting)await new Promise(r=>setTimeout(r,40));persisting=true;try{return await fn()}finally{persisting=false}}
+function scheduleAuto(){clearTimeout(autoTimer);autoTimer=setTimeout(()=>{if(document.getElementById("f_nom"))withLock(persistMember).catch(console.error);else if(document.getElementById("fc_nom"))withLock(persistChief).catch(console.error)},600)}
+async function closeForm(){clearTimeout(autoTimer);if(document.getElementById("f_nom"))await withLock(persistMember);else if(document.getElementById("fc_nom"))await withLock(persistChief);closeModal()}
+function activePerson(){return curKind==="chief"?curChef:cur}
+async function saveActive(){return curKind==="chief"?saveMaitrise():save()}
+function backToProfile(){let p=activePerson();curKind==="chief"?chiefProfile(p.id):profile(p.id)}
+
+/* ---------- Couche IndexedDB ---------- */
+const IDB_NAME="bw_gestion_db",IDB_VERSION=6,STORES=["members","maitrise","settings","templates","documents","photos","trash"];
+let idb=null;
+function openDB(){return new Promise((res,rej)=>{let req=indexedDB.open(IDB_NAME,IDB_VERSION);
+req.onupgradeneeded=e=>{let d=e.target.result;STORES.forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:s==="settings"?"key":(s==="templates"?"etape":"id")})})};
+req.onsuccess=e=>{idb=e.target.result;res(idb)};req.onerror=()=>rej(req.error)})}
+function idbGetAll(store="members"){return new Promise((res,rej)=>{let tx=idb.transaction(store,"readonly"),st=tx.objectStore(store),req=st.getAll();req.onsuccess=()=>res(req.result||[]);req.onerror=()=>rej(req.error)})}
+function idbPut(m,store="members"){return new Promise((res,rej)=>{let tx=idb.transaction(store,"readwrite");tx.objectStore(store).put(m);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+function idbDelete(id,store="members"){return new Promise((res,rej)=>{let tx=idb.transaction(store,"readwrite");tx.objectStore(store).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+function idbClear(store="members"){return new Promise((res,rej)=>{let tx=idb.transaction(store,"readwrite");tx.objectStore(store).clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+async function save(){try{for(const m of db.members)await idbPut(m)}catch(e){console.error("Erreur de sauvegarde IndexedDB",e);alert("Erreur lors de la sauvegarde locale. Vos dernières modifications pourraient ne pas être conservées.")}}
+async function saveMaitrise(){try{for(const m of db.maitrise)await idbPut(m,"maitrise")}catch(e){console.error("Erreur de sauvegarde Maîtrise",e);alert("Erreur lors de la sauvegarde locale de la Maîtrise.")}}
+async function saveSettings(){try{await idbPut(db.settings,"settings")}catch(e){console.error("Erreur de sauvegarde des paramètres",e)}}
+async function saveTemplates(etape){try{await idbPut({etape,epreuves:db.templates[etape]},"templates")}catch(e){console.error("Erreur de sauvegarde des épreuves",e)}}
+function migrateFinance(p){if(!p.finance)p.finance=[];if(!p.finance.some(x=>x.day!==undefined))return;let map={};p.finance.forEach(x=>{let k=x.month+"_"+x.week;let r=map[k]||(map[k]={month:x.month,week:x.week,planned:0,paid:0,date:""});r.planned+=+x.planned||0;r.paid+=+x.paid||0;if(!r.date&&x.date)r.date=x.date});p.finance=Object.values(map)}
+function migrateMemberEvalu(m){
+migrateFinance(m);if(!m.presence)m.presence=[];
+if(m.evalu)return;
+m.evalu={};
+ETAPES.forEach(etape=>{
+m.evalu[etape]={};
+let tmpl=db.templates[etape]||[];
+let old=(m.epreuves&&m.epreuves[etape])||[];
+tmpl.forEach((ep,i)=>{
+let oldEp=old[i],sousMap={};
+ep.sous.forEach((s,j)=>{sousMap[s.id]=!!(oldEp&&oldEp.sous&&oldEp.sous[j]&&oldEp.sous[j].ok)});
+m.evalu[etape][ep.id]=sousMap})})}
+async function loadAll(){
+await openDB();
+db.members=await idbGetAll();
+db.maitrise=await idbGetAll("maitrise");
+let s=await idbGetAll("settings");db.settings=s[0]||{key:"config",code:"1234"};
+if(Array.isArray(db.settings.patrouilles)&&db.settings.patrouilles.length>=1){PATROUILLES=db.settings.patrouilles.slice();rebuildPatColors()}
+let t=await idbGetAll("templates");
+db.templates={};
+for(const e of ETAPES){let found=t.find(x=>x.etape===e);db.templates[e]=(found&&Array.isArray(found.epreuves))?found.epreuves:[]}
+if(db.settings.evolutionReset!==2){
+for(const e of ETAPES){db.templates[e]=[];await idbPut({etape:e,epreuves:[]},"templates")}
+db.members.forEach(m=>{m.evalu=null;delete m.epreuves});
+db.settings.evolutionReset=2;await saveSettings();
+db.members.forEach(m=>migrateMemberEvalu(m));await save()}
+db.members.forEach(m=>migrateMemberEvalu(m));
+db.maitrise.forEach(m=>{if(!m.presence)m.presence=[];migrateFinance(m)});
+if(!db.settings.appCode){db.settings.appCode=db.settings.code||"1234";await saveSettings()}
+if(!db.settings.finPlan){let plan={};db.members.forEach(m=>(m.finance||[]).forEach(x=>{let v=+x.planned||0;if(v>0){let k=planKey(x.month,x.week);plan[k]=Math.max(plan[k]||0,v)}}));db.settings.finPlan=plan;db.members.forEach(m=>(m.finance||[]).forEach(x=>{x.planned=0}));await saveSettings();await save()}
+let need=db.members.filter(m=>!m.num);
+if(need.length){need.sort((a,b)=>(a.adhesion||"9999").localeCompare(b.adhesion||"9999")||(a.nom||"").localeCompare(b.nom||""));let c=Math.max(db.settings.numCounter||0,...db.members.map(m=>+m.num||0));need.forEach(m=>{c++;m.num=c;let y=parseInt((m.adhesion||"").slice(0,4));m.anMat=(y>=2000&&y<=2100)?y:new Date().getFullYear()});db.settings.numCounter=c;await saveSettings();await save()}
+db.photos=await idbGetAll("photos")}
+const HOME_ICON='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9.5v-6h5v6H17.5a1 1 0 0 0 1-1v-9"/></svg>';
+function navHomeHTML(){return `<button data-page="membersPage" onclick="go('membersPage')"><br>MEMBRES</button><button data-page="homePage" class="home-ic" onclick="go('homePage');renderHome()">${HOME_ICON}</button><button data-page="maitrisePage" onclick="openMaitrise()"><br>MAÎTRISE</button>`}
+function setNav(state){let nav=document.getElementById("bottomNav");if(state==="maitrise"){nav.style.display="none";nav.innerHTML=""}else{nav.style.display="";nav.className="bottom";nav.innerHTML=navHomeHTML()}}
+let inMaitrise=false;
+function enterMaitrise(){inMaitrise=true;try{history.pushState({maitrise:true},"","#maitrise")}catch(e){}renderPage("maitrisePage")}
+function exitMaitrise(){if(history.state&&history.state.maitrise){history.back()}else{inMaitrise=false;maitriseUnlocked=false;let mm=document.getElementById("maitrise");if(mm)mm.innerHTML="";renderPage("membersPage")}}
+window.addEventListener("popstate",()=>{if(inMaitrise){inMaitrise=false;maitriseUnlocked=false;let mm=document.getElementById("maitrise");if(mm)mm.innerHTML="";renderPage("membersPage")}});
+function renderPage(id){["membersPage","statsPage","maitrisePage","homePage"].forEach(p=>{let el=document.getElementById(p),show=p===id;el.style.display=show?"block":"none";if(show){el.classList.remove("page-enter");void el.offsetWidth;el.classList.add("page-enter")}});setNav(inMaitrise?"maitrise":"home");document.querySelectorAll("#bottomNav button[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id))}
+function go(id){closeMenu();renderPage(id)}
+function openModal(){modal.classList.add("open");modalbox.classList.remove("mb-anim");void modalbox.offsetWidth;modalbox.classList.add("mb-anim")}function closeModal(){modal.classList.remove("open")}
+
+/* ---------- Membres (affichage façon "stories") ---------- */
+function initials(m){return [m.nom,m.postnom,m.prenom].map(x=>(x||"").trim()).filter(Boolean).map(x=>x[0].toUpperCase()).join("")}
+function matricule(m){if(!m||!m.num)return "";return `${initials(m)||"XXX"}-${String(m.num).padStart(3,"0")}.${String(m.anMat||new Date().getFullYear()).slice(-2)}`}
+function nextNum(){let c=Math.max(db.settings.numCounter||0,...db.members.map(m=>+m.num||0))+1;db.settings.numCounter=c;return c}
+function fullName3(m){return [m.nom,m.postnom,m.prenom].map(x=>(x||"").trim()).filter(Boolean).join(" ")}
+function renderMembers(){let q=document.getElementById("q").value.toLowerCase();let sortBy=document.getElementById("sortBy")?.value||"nom";let filterHP=document.getElementById("filterHP")?.value||"";
+let list=db.members.filter(m=>(m.nom+" "+m.prenom+" "+(m.totem||"")+" "+(m.patrouille||"")).toLowerCase().includes(q));
+if(filterHP==="hp")list=list.filter(m=>m.hautePatrouille);
+list.sort((a,b)=>(a[sortBy]||"").localeCompare(b[sortBy]||""));
+members.innerHTML=list.map(m=>{let ring=(PATROUILLE_COLORS[m.patrouille]||{border:"#5b21b6"}).border;
+return `<div class="story" data-id="${m.id}" onclick="if(lpFired){lpFired=false}else{profile('${m.id}')}" ontouchstart="lpStart('${m.id}')" ontouchend="lpEnd()" ontouchmove="lpEnd()" onmousedown="lpStart('${m.id}')" onmouseup="lpEnd()" onmouseleave="lpEnd()"><div class="ring" style="background:${ring}"><img src="${m.photo||""}" onerror="this.style.visibility='hidden'"></div><div class="name">${esc(m.prenom)}</div></div>`}).join("")||'<div class="panel">Aucun membre. Appuyez sur ＋ pour commencer.</div>'}
+let lpTimer=null,lpFired=false;
+function lpStart(id){lpFired=false;clearTimeout(lpTimer);lpTimer=setTimeout(()=>{lpFired=true;if(navigator.vibrate)navigator.vibrate(12);openMemberQuickMenu(id)},550)}
+function lpEnd(){clearTimeout(lpTimer)}
+function openMemberQuickMenu(id){let m=db.members.find(x=>x.id===id);if(!m)return;
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>${esc(m.prenom)} ${esc(m.nom)}</h2>
+<div style="display:flex;flex-direction:column;gap:10px">
+<button class="secondary" onclick="closeModal();profile('${id}')">Ouvrir le profil</button>
+<button class="secondary" onclick="quickExportMember('${id}')">Télécharger les informations</button>
+<button class="secondary" onclick="quickShareMember('${id}')">Partager le profil</button>
+<button class="danger" onclick="quickDeleteMember('${id}')">Supprimer le profil</button>
+</div>`;openModal()}
+function quickExportMember(id){let m=db.members.find(x=>x.id===id);if(!m)return;cur=m;curKind="member";exportMemberPDF()}
+function quickShareMember(id){let m=db.members.find(x=>x.id===id);if(!m)return;cur=m;curKind="member";exportMemberPDF(true)}
+
+function memberForm(id){formMemberId=id||null;let m=id?db.members.find(x=>x.id===id):{};
+let santeOpts=["","Malade","Assez bien","Bien","Excellente"];if(m.sante&&!santeOpts.includes(m.sante))santeOpts.push(m.sante);
+modalbox.innerHTML=`<button class=back onclick="closeForm()">← Retour</button><h2>${id?"Modifier":"Ajouter"} un scout</h2>
+<div class=autost id=autoSt>${id?"Enregistrement automatique activé.":"Enregistrement automatique : remplissez Nom, Prénom et Patrouille."}</div>
+<div id="formErr" style="color:#a52b2b;font-weight:700;margin-bottom:6px"></div>
+<label>Patrouille *</label><select id=f_patrouille>${["",...PATROUILLES].map(s=>`<option value="${esc(s)}" ${m.patrouille===s?"selected":""}>${s?esc(s):"— Choisir —"}</option>`).join("")}</select>
+<label>Étape de progression</label><select id=f_etape><option value="">— Choisir —</option>${ETAPES.map(s=>`<option ${m.etape===s?"selected":""}>${s}</option>`).join("")}</select>
+<label style="display:flex;align-items:center;gap:8px;font-weight:400"><input type=checkbox id=f_hautePatrouille style="width:auto" ${m.hautePatrouille?"checked":""}> Membre de la Haute Patrouille <span style="font-weight:400;color:var(--muted);font-size:12px">(réservé au Chef et au Second de patrouille)</span></label>
+<label>Chef encadrant</label><select id=f_chefId><option value="">— Aucun / non défini —</option>${db.members.filter(x=>x.id!==id).map(x=>`<option value="${x.id}" ${m.chefId===x.id?"selected":""}>${esc(x.prenom)} ${esc(x.nom)}${x.totem?` (${esc(x.totem)})`:""}</option>`).join("")}</select>
+${[['nom','Nom *'],['postnom','Postnom'],['prenom','Prénom *'],['totem','Totem'],['fonction','Fonction'],['poste','Poste']].map(([k,l])=>`<label>${l}</label><input id=f_${k} value="${esc(m[k])}">`).join("")}
+<label>Sexe</label><select id=f_sexe><option value="">— Choisir —</option><option ${m.sexe==="M"?"selected":""}>M</option><option ${m.sexe==="F"?"selected":""}>F</option></select>
+<label>État de santé</label><select id=f_sante>${santeOpts.map(s=>`<option value="${esc(s)}" ${m.sante===s?"selected":""}>${s?esc(s):"— Choisir —"}</option>`).join("")}</select>
+<label>Allergies</label><input id=f_allergies value="${esc(m.allergies)}">
+<label>Lieu de naissance</label><input id=f_lieu value="${esc(m.lieu)}">
+<label>Téléphone</label><input id=f_tel value="${esc(m.tel)}">
+<label>E-mail</label><input id=f_email value="${esc(m.email)}">
+<label>Adresse</label><input id=f_adresse value="${esc(m.adresse)}">
+<label>Contact d'urgence — Nom</label><input id=f_urgenceNom value="${esc(m.urgenceNom)}">
+<label>Contact d'urgence — Téléphone</label><input id=f_urgenceTel value="${esc(m.urgenceTel)}">
+<label>Date de naissance</label><input type=date id=f_naissance value="${m.naissance||""}">
+<label>Date d'adhésion</label><input type=date id=f_adhesion value="${m.adhesion||""}">
+<label>Date de promesse</label><input type=date id=f_promesse value="${m.promesse||""}">
+<label>Notes</label><textarea id=f_notes>${esc(m.notes)}</textarea>
+<label>Photo</label><input type=file id=f_photo accept="image/jpeg,image/png,image/webp"><br><br><button onclick="saveMember()">Terminer</button>`;openModal()}
+async function persistMember(){
+if(!document.getElementById("f_nom"))return null;
+let nom=f_nom.value.trim(),prenom=f_prenom.value.trim(),patrouille=f_patrouille.value;
+if(!nom||!prenom||!patrouille)return null;
+let m=formMemberId?db.members.find(x=>x.id===formMemberId):null,isNew=!m;
+if(isNew){m={id:crypto.randomUUID(),finance:[],presence:[]};migrateMemberEvalu(m);m.num=nextNum();m.anMat=new Date().getFullYear()}
+["patrouille","etape","chefId","nom","postnom","prenom","totem","fonction","poste","sexe","sante","allergies","lieu","tel","email","adresse","urgenceNom","urgenceTel","naissance","adhesion","promesse","notes"].forEach(k=>m[k]=document.getElementById("f_"+k).value);
+m.hautePatrouille=document.getElementById("f_hautePatrouille").checked;
+let f=f_photo.files[0];
+if(f){m.photo=await new Promise(res=>{let r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});f_photo.value=""}
+if(isNew){db.members.push(m);formMemberId=m.id;await saveSettings()}
+await save();renderMembers();
+let st=document.getElementById("autoSt");if(st)st.textContent="Enregistré automatiquement";
+return m}
+async function saveMember(){clearTimeout(autoTimer);let m=await withLock(persistMember);if(!m){let e=document.getElementById("formErr");if(e)e.textContent="Veuillez remplir les champs obligatoires : Nom, Prénom, Patrouille.";return}closeModal()}
+
+function profile(id){cur=db.members.find(x=>x.id===id);curKind="member";let chef=cur.chefId?db.members.find(x=>x.id===cur.chefId):null;
+let infos=[];
+if(cur.totem)infos.push(["Totem",cur.totem]);
+if(cur.fonction)infos.push(["Fonction",cur.fonction]);
+if(cur.poste)infos.push(["Poste",cur.poste]);
+if(chef)infos.push(["Chef encadrant",`${chef.prenom} ${chef.nom}`]);
+if(cur.sexe)infos.push(["Sexe",cur.sexe]);
+if(cur.naissance)infos.push(["Date de naissance",cur.naissance]);
+if(cur.lieu)infos.push(["Lieu de naissance",cur.lieu]);
+if(cur.tel)infos.push(["Téléphone",cur.tel]);
+if(cur.email)infos.push(["E-mail",cur.email]);
+if(cur.adresse)infos.push(["Adresse",cur.adresse]);
+if(cur.adhesion)infos.push(["Date d'adhésion",cur.adhesion]);
+if(cur.promesse)infos.push(["Date de promesse",cur.promesse]);
+if(cur.urgenceNom)infos.push(["Contact d'urgence",`${cur.urgenceNom}${cur.urgenceTel?" — "+cur.urgenceTel:""}`]);
+if(cur.sante)infos.push(["État de santé",cur.sante]);
+if(cur.allergies)infos.push(["Allergies",cur.allergies]);
+if(cur.notes)infos.push(["Notes",cur.notes]);
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button>
+<div class=panel style="text-align:center">
+<img class=avatar src="${cur.photo||""}" style="width:120px;height:120px;border-width:4px" onerror="this.style.visibility='hidden'">
+${cur.num?`<div style="margin-top:8px"><span class=badge style="font-size:13px;letter-spacing:1px">${esc(matricule(cur))}</span></div>`:""}<h2 style="margin:12px 0 4px">${esc(cur.prenom)} ${esc(cur.nom)}</h2>
+<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${patBadge(cur.patrouille)||'<span class=badge>Sans patrouille</span>'} ${cur.etape?`<span class=badge>${esc(cur.etape)}</span>`:""} ${cur.hautePatrouille?`<span class=badge>Haute Patrouille</span>`:""}</div>
+<div class=infogrid>${infos.map(([l,v])=>`<div class=infoitem><div class=lbl>${esc(l)}</div><div class=val>${esc(v)}</div></div>`).join("")||'<p style="grid-column:1/-1;color:var(--muted)">Aucune information complémentaire renseignée.</p>'}</div>
+</div>
+<div class="stories" style="justify-content:center;margin-top:14px">${modStory("","FINANCE","finance()",MOD_GRAD.finance)}${modStory("","PRÉSENCE","presence()",MOD_GRAD.presence)}${modStory("","ÉVOLUTION","evolution()",MOD_GRAD.evolution)}</div>
+<br><button onclick="memberForm('${cur.id}')">Modifier</button> <button class="secondary" onclick="exportMemberPDF()">Fiche PDF</button> <button class=danger onclick="delMember()">Supprimer</button>`;openModal()}
+
+/* ---------- PDF : en-tête avec photo au-dessus du nom complet ---------- */
+function photoForPDF(dataUrl){return new Promise(res=>{if(!dataUrl)return res(null);let img=new Image();
+img.onload=()=>{try{let s=Math.min(img.width,img.height),c=document.createElement("canvas");c.width=c.height=320;let x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,320,320);x.beginPath();x.arc(160,160,160,0,Math.PI*2);x.closePath();x.clip();x.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,320,320);res(c.toDataURL("image/jpeg",0.92))}catch(e){res(null)}};
+img.onerror=()=>res(null);img.src=dataUrl})}
+async function pdfHeader(doc,p,subtitle){let W=doc.internal.pageSize.getWidth(),y=12,photo=await photoForPDF(p.photo);
+if(photo){doc.addImage(photo,"JPEG",W/2-20,y,40,40);y+=46}else{y+=4}
+let mat=matricule(p);if(mat){doc.setFontSize(11);doc.setTextColor(91,33,182);doc.text(mat,W/2,y,{align:"center"});doc.setTextColor(0);y+=8}
+let full=`${p.prenom||""} ${p.postnom||""} ${p.nom||""}`.replace(/\s+/g," ").trim()||"—";
+doc.setFontSize(18);doc.setTextColor(0);doc.text(full,W/2,y+6,{align:"center"});y+=13;
+doc.setFontSize(10);doc.setTextColor(110);doc.text(subtitle,W/2,y,{align:"center"});doc.setTextColor(0);return y+6}
+function fileName(p){return `${(p.prenom||"x").replace(/\s+/g,"_")}_${(p.nom||"x").replace(/\s+/g,"_")}`}
+
+/* ---------- Finance (commun jeunes + chefs) — 11 mois, saisie par semaine ---------- */
+function finance(){let p=activePerson();migrateFinance(p);renderFinanceMonth(1)}
+function finRec(p,mo,w){return p.finance.find(x=>x.month===mo&&x.week===w)}
+function isChief(p){return db.maitrise.includes(p)}
+function planKey(mo,w){return mo+"_"+w}
+function plannedOf(p,mo,w){if(isChief(p)){let r=finRec(p,mo,w);return r?+r.planned||0:0}return +((db.settings.finPlan||{})[planKey(mo,w)])||0}
+function finTotals(p){let paid=(p.finance||[]).reduce((a,x)=>a+(+x.paid||0),0),planned=isChief(p)?(p.finance||[]).reduce((a,x)=>a+(+x.planned||0),0):Object.values(db.settings.finPlan||{}).reduce((a,v)=>a+(+v||0),0);return {planned,paid,rest:planned-paid}}
+function renderFinanceMonth(mo){let p=activePerson();let W=[1,2,3,4];
+let tabs=Array.from({length:NB_MOIS},(_,i)=>i+1).map(m=>`<button class="${m===mo?"":"secondary"}" onclick="renderFinanceMonth(${m})" style="flex:1;min-width:44px;padding:8px 4px;font-size:12px">M${m}</button>`).join("");
+let cell=(w,k,type)=>{let r=finRec(p,mo,w);let v=(k==="planned")?plannedOf(p,mo,w):(r?r[k]:(k==="date"?"":0));return `<td><input type=${type} ${type==="number"?"min=0 ":""}value="${v||(type==="number"?0:"")}" onchange="wedit(${mo},${w},'${k}',this.value)" style="min-width:110px"></td>`};
+let quick=`<div class=panel style="margin-bottom:12px"><h3 style="margin:0 0 8px">Saisie — Mois ${mo}</h3><div class=tablewrap><table class=table style="min-width:520px"><tr><th></th>${W.map(w=>`<th>Semaine ${w}</th>`).join("")}</tr>
+<tr><th style="text-align:left">Montant prévu</th>${W.map(w=>cell(w,"planned","number")).join("")}</tr>
+<tr><th style="text-align:left">Montant payé</th>${W.map(w=>cell(w,"paid","number")).join("")}</tr>
+<tr><th style="text-align:left">Date</th>${W.map(w=>cell(w,"date","date")).join("")}</tr></table></div><p style="margin:8px 0 0;font-size:12px;color:var(--muted)">${isChief(p)?"":"Le montant prévu est commun à tous les jeunes ; chaque jeune garde son propre payé et sa propre date. "}Le tableau ci-dessous se remplit automatiquement.</p></div>`;
+modalbox.innerHTML=`<button class=back onclick="backToProfile()">← Fiche</button><h2>FINANCE — ${esc(p.prenom)} ${esc(p.nom)}</h2>
+<div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">${tabs}</div>
+${quick}
+<div id=finView></div>
+<div id=fsum></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button onclick="confirmFinance()">Confirmer et enregistrer</button><button class="secondary" onclick="exportFinancePDF()">Télécharger le relevé</button></div>`;
+openModal();refreshFinanceView(mo)}
+function refreshFinanceView(mo){let p=activePerson();let rows="",mP=0,mD=0;
+for(let w=1;w<=4;w++){let r=finRec(p,mo,w)||{planned:0,paid:0,date:""};let pl=plannedOf(p,mo,w),pd=+r.paid||0,rem=pl-pd,empty=!pl&&!pd;mP+=pl;mD+=pd;
+rows+=`<tr class="${empty?"":rem>0?"bad":rem<0?"warn":"ok"}"><td>S${w}</td><td>${r.date?esc(r.date):"—"}</td><td>${pl}</td><td>${pd}</td><td>${rem}</td><td>${empty?"—":pd<pl?"":pd>pl?"":""}</td></tr>`}
+document.getElementById("finView").innerHTML=`<div class="panel" style="display:flex;justify-content:space-around;text-align:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700">Prévu (ce mois)</div><div style="font-size:20px;font-weight:800;color:var(--g)">${mP}</div></div>
+<div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700">Payé (ce mois)</div><div style="font-size:20px;font-weight:800;color:#0f766e">${mD}</div></div>
+<div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700">Restant (ce mois)</div><div style="font-size:20px;font-weight:800;color:#b91c3c">${mP-mD}</div></div></div>
+<div class=tablewrap><table class=table><tr><th>Semaine</th><th>Date paiement</th><th>Montant prévu</th><th>Montant payé</th><th>Montant restant</th><th>Ind.</th></tr>${rows}</table></div>`;
+ftotals()}
+async function wedit(mo,w,k,v){let p=activePerson();if(k==="planned"&&!isChief(p)){db.settings.finPlan=db.settings.finPlan||{};db.settings.finPlan[planKey(mo,w)]=+v||0;await saveSettings();refreshFinanceView(mo);return}let r=finRec(p,mo,w);if(!r){r={month:mo,week:w,planned:0,paid:0,date:""};p.finance.push(r)}r[k]=k==="date"?v:(+v||0);await saveActive();refreshFinanceView(mo)}
+async function confirmFinance(){await saveActive();alert("Finance enregistrée")}
+function ftotals(){let p=activePerson(),t=finTotals(p),a=t.planned,b=t.paid;document.getElementById("fsum").innerHTML=`<div class=stats><div class=stat>Prévu total<div class=num>${a}</div></div><div class=stat>Payé total<div class=num>${b}</div></div><div class=stat>Restant total<div class=num>${a-b}</div></div><div class=stat>Indicateur<div class=num>${b<a?"":b>a?"":""}</div></div></div><div class=panel style="margin-top:12px;text-align:center"><b>Graphique secteur 2D</b><canvas id=pie height=220 style="display:block;margin:10px auto;max-width:280px"></canvas></div>`;drawPie("pie",a,b)}
+function drawPie(id,a,b){let c=document.getElementById(id);if(!c)return;let cssH=+(c.getAttribute("height")||220);let x=c.getContext("2d"),w=c.width=c.clientWidth*2,h=c.height=cssH*2,total=a+b||1,ang=a/total*Math.PI*2,rad=Math.min(w,h)*0.32;
+function arc(start,end){x.beginPath();x.moveTo(w/2,h/2);x.arc(w/2,h/2,rad,start,end);x.closePath();x.fill()}
+x.clearRect(0,0,w,h);x.fillStyle="#5b21b6";arc(-Math.PI/2,-Math.PI/2+ang);x.fillStyle="#a855f7";arc(-Math.PI/2+ang,Math.PI*1.5);
+x.fillStyle="#1e1b2e";x.font=`${Math.max(14,Math.round(h*0.06))}px Arial`;x.textAlign="center";x.fillText("Prévu / Payé",w/2,h-h*0.07)}
+async function exportFinancePDF(){let p=activePerson();let {jsPDF}=window.jspdf,doc=new jsPDF();
+let y=await pdfHeader(doc,p,"Relevé de finance");
+let body=[];for(let mo=1;mo<=NB_MOIS;mo++)for(let w=1;w<=4;w++){let r=finRec(p,mo,w)||{planned:0,paid:0,date:""};body.push([`Mois ${mo}`,`S${w}`,r.date||"",plannedOf(p,mo,w),r.paid||0,plannedOf(p,mo,w)-(+r.paid||0)])}
+doc.autoTable({head:[["Mois","Semaine","Date paiement","Prévu","Payé","Restant"]],body,startY:y,styles:{fontSize:8}});
+let {planned,paid}=finTotals(p);
+doc.setFontSize(11);doc.text(`Total prévu : ${planned}    Total payé : ${paid}    Reste : ${planned-paid}`,14,doc.lastAutoTable.finalY+10);
+doc.save(`Finance_${fileName(p)}.pdf`)}
+
+/* ---------- Présence (commun jeunes + chefs) — 11 mois ---------- */
+function presence(){let p=activePerson();if(!p.presence)p.presence=[];renderPresenceMonth(1)}
+function renderPresenceMonth(mo){let p=activePerson();let rows="";
+for(let w=1;w<=4;w++)for(let d=0;d<2;d++){let r=p.presence.find(x=>x.month===mo&&x.week===w&&x.day===d);rows+=`<tr><td>S${w}</td><td>${d?"Dimanche":"Samedi"}</td><td><input type=checkbox ${r&&r.present?"checked":""} onchange="pedit(${mo},${w},${d},this.checked)"></td></tr>`}
+let n=p.presence.filter(x=>x.month===mo&&x.present).length;
+let tabs=Array.from({length:NB_MOIS},(_,i)=>i+1).map(m=>`<button class="${m===mo?"":"secondary"}" style="flex:1;min-width:44px;font-size:12px;padding:8px 4px" onclick="renderPresenceMonth(${m})">M${m}</button>`).join("");
+modalbox.innerHTML=`<button class=back onclick="backToProfile()">← Fiche</button><h2>PRÉSENCE — Mois ${mo}</h2>
+<div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">${tabs}</div>
+<div class=tablewrap><table class=table><tr><th>Semaine</th><th>Jour</th><th>Présent</th></tr>${rows}</table></div>
+<div class=stats><div class=stat>Présences<div class=num>${n}</div></div><div class=stat>Absences<div class=num>${8-n}</div></div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button onclick="confirmPresence()">Confirmer et enregistrer</button><button class="secondary" onclick="exportPresencePDF(${mo})">Télécharger ce mois</button><button class="secondary" onclick="exportPresencePDF()">Télécharger tous les mois</button></div>`;openModal()}
+async function pedit(mo,w,d,v){let p=activePerson();let r=p.presence.find(x=>x.month===mo&&x.week===w&&x.day===d);if(!r){r={month:mo,week:w,day:d,present:false};p.presence.push(r)}r.present=v;await saveActive();renderPresenceMonth(mo)}
+async function confirmPresence(){await saveActive();alert("Présence enregistrée")}
+async function exportPresencePDF(mo){let p=activePerson();let {jsPDF}=window.jspdf,doc=new jsPDF();
+if(mo){let y=await pdfHeader(doc,p,`Fiche de présence — Mois ${mo}`);
+let body=[];for(let w=1;w<=4;w++)for(let d=0;d<2;d++){let r=p.presence.find(x=>x.month===mo&&x.week===w&&x.day===d);body.push([`S${w}`,d?"Dimanche":"Samedi",r&&r.present?"Présent":"Absent"])}
+doc.autoTable({head:[["Semaine","Jour","Statut"]],body,startY:y});
+doc.save(`Presence_Mois${mo}_${fileName(p)}.pdf`)
+}else{let y=await pdfHeader(doc,p,"Fiche de présence — tous les mois");
+let body=[];for(let mm=1;mm<=NB_MOIS;mm++)for(let w=1;w<=4;w++)for(let d=0;d<2;d++){let r=p.presence.find(x=>x.month===mm&&x.week===w&&x.day===d);body.push([`Mois ${mm}`,`S${w}`,d?"Dimanche":"Samedi",r&&r.present?"Présent":"Absent"])}
+doc.autoTable({head:[["Mois","Semaine","Jour","Statut"]],body,startY:y,styles:{fontSize:8}});
+doc.save(`Presence_tous_les_mois_${fileName(p)}.pdf`)}}
+
+/* ---------- Évolution (jeunes uniquement — épreuves modifiables, partagées par étape) ---------- */
+function evolution(){let etapeSel=cur._etapeAffichee||ETAPES[0];if(!cur.evalu)migrateMemberEvalu(cur);
+let tmpl=db.templates[etapeSel]||[];let compl=cur.evalu[etapeSel]||(cur.evalu[etapeSel]={});
+let tabs=ETAPES.map(e=>`<button class="${e===etapeSel?"":"secondary"}" onclick="switchEtape('${e}')" style="flex:1">${e} (${(db.templates[e]||[]).length})</button>`).join(" ");
+let openId=cur._epreuveOuverteId||null;
+let rows=tmpl.map(ep=>{let sousMap=compl[ep.id]||(compl[ep.id]={});
+let hasSous=ep.sous.length>0,nSous=hasSous?ep.sous.filter(s=>sousMap[s.id]).length:(sousMap._self?1:0),tot=hasSous?ep.sous.length:1,pSous=Math.round(nSous/tot*100),isOpen=openId===ep.id;
+let ligneEpreuve=`<tr class="${pSous===100?"ok":""}" style="cursor:pointer" onclick="toggleSous('${ep.id}')"><td style="text-align:left"><b>${esc(ep.nom)}</b></td>${hasSous?`<td>${nSous}/${ep.sous.length}</td>`:`<td onclick="event.stopPropagation()"><label style="display:flex;justify-content:center;align-items:center;gap:6px;margin:0;font-weight:400"><input type=checkbox style="width:auto" ${sousMap._self?"checked":""} onchange="sousEdit('${etapeSel}','${ep.id}','_self',this.checked)"> réussie</label></td>`}<td><span class=badge>${isOpen?"▲":"▼"} ${pSous}%</span></td></tr>`;
+let lignesSous=isOpen?(ep.sous.length?ep.sous.map(s=>`<tr><td style="text-align:left;padding-left:28px">↳ ${esc(s.nom)}</td><td colspan=2><input type=checkbox ${sousMap[s.id]?"checked":""} onchange="sousEdit('${etapeSel}','${ep.id}','${s.id}',this.checked)"> réussie</td></tr>`).join(""):`<tr><td colspan=3 style="text-align:left;padding-left:28px;color:var(--muted)">Épreuve sans sous-épreuve : cochez « réussie » sur la ligne ci-dessus, ou ajoutez des sous-épreuves.</td></tr>`):"";
+let actionsRow=isOpen?`<tr><td colspan=3 style="text-align:left;padding-left:28px"><button class="secondary" style="font-size:12px;padding:6px 10px" onclick="addSousEpreuve('${etapeSel}','${ep.id}')">＋ Sous-épreuve</button> <button class="danger" style="font-size:12px;padding:6px 10px" onclick="delEpreuve('${etapeSel}','${ep.id}')">Supprimer l'épreuve</button></td></tr>`:"";
+return ligneEpreuve+lignesSous+actionsRow}).join("");
+let totalSous=tmpl.reduce((a,e)=>a+(e.sous.length||1),0),okSous=tmpl.reduce((a,e)=>{let sm=compl[e.id]||{};return a+(e.sous.length?e.sous.filter(s=>sm[s.id]).length:(sm._self?1:0))},0),p=totalSous?Math.round(okSous/totalSous*100):0;
+modalbox.innerHTML=`<button class=back onclick="profile('${cur.id}')">← Fiche</button><h2>ÉVOLUTION</h2>
+<div style="display:flex;gap:6px;margin-bottom:12px">${tabs}</div>
+<button class="secondary" style="margin-bottom:10px" onclick="addEpreuve('${etapeSel}')">＋ Ajouter une épreuve</button>
+<div class=tablewrap><table class=table><tr><th>Épreuve</th><th>Réussite</th><th>Détail</th></tr>${rows||'<tr><td colspan=3>Aucune épreuve pour cette étape.</td></tr>'}</table></div>
+<div class=panel style="margin-top:12px;text-align:center"><h3>Progression ${etapeSel} : ${p}%</h3><svg width=130 height=130 viewBox="0 0 42 42"><circle cx=21 cy=21 r=15.9 fill="none" stroke="#ddd" stroke-width="5"/><circle cx=21 cy=21 r=15.9 fill="none" stroke="#5b21b6" stroke-width="5" stroke-dasharray="${p} ${100-p}" transform="rotate(-90 21 21)"/></svg></div>
+<label>Comportement</label><textarea id=beh onchange="saveEvalSilent()">${esc(cur.beh)}</textarea><label>Aptitude</label><textarea id=apt onchange="saveEvalSilent()">${esc(cur.apt)}</textarea><label>Notes et remarques</label><textarea id=rem onchange="saveEvalSilent()">${esc(cur.rem)}</textarea><br><button onclick="saveEval()">Confirmer et enregistrer</button>`;openModal()}
+function switchEtape(e){cur._etapeAffichee=e;cur._epreuveOuverteId=null;evolution()}
+function toggleSous(epId){cur._epreuveOuverteId=cur._epreuveOuverteId===epId?null:epId;evolution()}
+function addEpreuve(etape){let nom=prompt("Nom de la nouvelle épreuve :");if(!nom||!nom.trim())return;let slug=ETAPE_SLUG[etape],newId=`${slug}_e${Date.now()}`;db.templates[etape].push({id:newId,nom:nom.trim(),sous:[]});saveTemplates(etape);cur._epreuveOuverteId=newId;evolution()}
+function delEpreuve(etape,epId){if(!confirm("Supprimer cette épreuve pour TOUTE la troupe (sur toutes les fiches) ?"))return;db.templates[etape]=db.templates[etape].filter(e=>e.id!==epId);saveTemplates(etape);cur._epreuveOuverteId=null;evolution()}
+function addSousEpreuve(etape,epId){let nom=prompt("Nom de la nouvelle sous-épreuve :");if(!nom)return;let ep=db.templates[etape].find(e=>e.id===epId);let newSid=`${epId}_s${Date.now()}`;ep.sous.push({id:newSid,nom});saveTemplates(etape);evolution()}
+async function sousEdit(etape,epId,sousId,v){if(!cur.evalu)cur.evalu={};if(!cur.evalu[etape])cur.evalu[etape]={};if(!cur.evalu[etape][epId])cur.evalu[etape][epId]={};cur.evalu[etape][epId][sousId]=v;await save();evolution()}
+async function saveEvalSilent(){cur.beh=beh.value;cur.apt=apt.value;cur.rem=rem.value;await save()}
+async function saveEval(){cur.beh=beh.value;cur.apt=apt.value;cur.rem=rem.value;await save();alert("Évolution enregistrée")}
+
+/* ---------- Statistiques ---------- */
+function renderStats(){
+let novice=db.members.filter(m=>m.etape==="Novice").length,deuxieme=db.members.filter(m=>m.etape==="2e classe").length,premiere=db.members.filter(m=>m.etape==="1re classe").length;
+document.getElementById("statsMembers").innerHTML=`<div class="stat clickable" onclick="showEtapeList('Novice')">Novice<div class=num>${novice}</div></div><div class="stat clickable" onclick="showEtapeList('2e classe')">2e classe<div class=num>${deuxieme}</div></div><div class="stat clickable" onclick="showEtapeList('1re classe')">1re classe<div class=num>${premiere}</div></div><div class=stat>Total jeunes<div class=num>${db.members.length}</div></div>`;
+let pres=0;db.members.forEach(m=>pres+=(m.presence||[]).filter(x=>x.present).length);
+document.getElementById("statsPresence").innerHTML=`<div class="stat clickable" onclick="showPresenceList()">Présences enregistrées<div class=num>${pres}</div></div>`;
+let plannedY=0,paidY=0;db.members.forEach(m=>{let t=finTotals(m);plannedY+=t.planned;paidY+=t.paid});
+document.getElementById("statsFinanceYouth").innerHTML=`<div class="stat clickable" onclick="showPlannedList()">Prévu<div class=num>${plannedY}</div></div><div class="stat clickable" onclick="showPaidList()">Payé<div class=num>${paidY}</div></div><div class="stat clickable" onclick="showRestList('youth')">Reste<div class=num>${plannedY-paidY}</div></div>`;
+drawPie("pieYouth",plannedY,paidY);
+let plannedC=0,paidC=0;db.maitrise.forEach(m=>{let t=finTotals(m);plannedC+=t.planned;paidC+=t.paid});
+document.getElementById("statsFinanceChief").innerHTML=`<div class="stat clickable" onclick="showPlannedListChiefs()">Prévu<div class=num>${plannedC}</div></div><div class="stat clickable" onclick="showPaidListChiefs()">Payé<div class=num>${paidC}</div></div><div class="stat clickable" onclick="showRestList('chief')">Reste<div class=num>${plannedC-paidC}</div></div>`;
+drawPie("pieChief",plannedC,paidC);
+renderPatrolCircles()}
+function renderPatrolCircles(){let el=document.getElementById("patrolCircles");if(!el)return;
+if(!db.members.length){el.innerHTML='<p style="color:var(--muted)">Aucune donnée à afficher pour le moment.</p>';return}
+el.innerHTML=PATROUILLES.map(p=>{let c=PATROUILLE_COLORS[p]||{bg:"#69746c",fg:"#fff",border:"#69746c"};let n=db.members.filter(m=>m.patrouille===p).length;
+return `<div style="text-align:center"><div style="width:78px;height:78px;border-radius:50%;background:${c.bg};color:${c.fg};display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;margin:auto;border:3px solid ${c.border};box-shadow:0 4px 14px #3b076422">${n}</div><div style="margin-top:8px;font-weight:700;font-size:13px">${esc(p)}</div></div>`}).join("")}
+function memberAttendanceRate(m){let recs=m.presence||[];if(!recs.length)return null;return recs.filter(x=>x.present).length/recs.length}
+function showPresenceList(){let reg=[],irr=[];
+db.members.forEach(m=>{let r=memberAttendanceRate(m);(r!==null&&r>=0.5?reg:irr).push(m)});
+reg.sort((a,b)=>(a.nom||"").localeCompare(b.nom||""));irr.sort((a,b)=>(a.nom||"").localeCompare(b.nom||""));
+let item=m=>`<div class="panel" style="padding:9px 12px;margin-bottom:8px;text-align:left">${esc(m.prenom)} ${esc(m.nom)}</div>`;
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>PRÉSENCE</h2>
+<p style="color:var(--muted);margin-top:-6px;font-size:13px">Régulier = présent à au moins 50% des séances enregistrées pour ce jeune.</p>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div style="flex:1;min-width:200px"><h3 style="color:#0f766e">Réguliers (${reg.length})</h3>${reg.map(item).join("")||'<p style="color:var(--muted)">Aucun</p>'}</div>
+<div style="flex:1;min-width:200px"><h3 style="color:#b91c3c">Irréguliers (${irr.length})</h3>${irr.map(item).join("")||'<p style="color:var(--muted)">Aucun</p>'}</div>
+</div>`;openModal()}
+function showPlannedList(){let list=db.members.map(m=>({m,total:finTotals(m).planned}));
+list.sort((a,b)=>(a.m.nom||"").localeCompare(b.m.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Montants prévus — Jeunes</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom</th><th>Montant prévu</th></tr>${list.map(x=>`<tr><td style="text-align:left">${esc(x.m.prenom)} ${esc(x.m.nom)}</td><td>${x.total}</td></tr>`).join("")||'<tr><td colspan=2>Aucun membre</td></tr>'}</table></div>`;openModal()}
+function showPaidList(){let list=db.members.map(m=>{let t=finTotals(m);return {m,planned:t.planned,paid:t.paid,rest:t.rest}});
+list.sort((a,b)=>(a.m.nom||"").localeCompare(b.m.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Paiements — Jeunes</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom</th><th>Payé</th><th>Reste à payer</th></tr>${list.map(x=>`<tr class="${x.rest>0?"bad":x.rest<0?"warn":"ok"}"><td style="text-align:left">${esc(x.m.prenom)} ${esc(x.m.nom)}</td><td>${x.paid}</td><td>${x.rest}</td></tr>`).join("")||'<tr><td colspan=3>Aucun membre</td></tr>'}</table></div>`;openModal()}
+function showPlannedListChiefs(){let list=db.maitrise.map(m=>({m,total:finTotals(m).planned}));
+list.sort((a,b)=>(a.m.nom||"").localeCompare(b.m.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Montants prévus — Chefs</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom</th><th>Montant prévu</th></tr>${list.map(x=>`<tr><td style="text-align:left">${esc(x.m.prenom)} ${esc(x.m.nom)}</td><td>${x.total}</td></tr>`).join("")||'<tr><td colspan=2>Aucun membre</td></tr>'}</table></div>`;openModal()}
+function showPaidListChiefs(){let list=db.maitrise.map(m=>{let t=finTotals(m);return {m,planned:t.planned,paid:t.paid,rest:t.rest}});
+list.sort((a,b)=>(a.m.nom||"").localeCompare(b.m.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Paiements — Chefs</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom</th><th>Payé</th><th>Reste à payer</th></tr>${list.map(x=>`<tr class="${x.rest>0?"bad":x.rest<0?"warn":"ok"}"><td style="text-align:left">${esc(x.m.prenom)} ${esc(x.m.nom)}</td><td>${x.paid}</td><td>${x.rest}</td></tr>`).join("")||'<tr><td colspan=3>Aucun membre</td></tr>'}</table></div>`;openModal()}
+
+function showEtapeList(etape){let list=db.members.filter(m=>m.etape===etape).sort((a,b)=>(a.nom||"").localeCompare(b.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>${esc(etape)} (${list.length})</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom complet</th><th>Patrouille</th></tr>${list.map(m=>`<tr><td style="text-align:left">${esc(m.prenom)} ${esc(m.postnom)} ${esc(m.nom)}</td><td>${patBadge(m.patrouille)}</td></tr>`).join("")||'<tr><td colspan=2>Aucun jeune à cette étape</td></tr>'}</table></div>`;openModal()}
+function showRestList(kind){let arr=kind==="chief"?db.maitrise:db.members;
+let list=arr.map(m=>({m,rest:finTotals(m).rest})).sort((a,b)=>(a.m.nom||"").localeCompare(b.m.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>${kind==="chief"?"Reste à payer — Chefs":"Reste à payer — Jeunes"}</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom</th><th>Reste à payer</th></tr>${list.map(x=>`<tr class="${x.rest>0?"bad":x.rest<0?"warn":"ok"}"><td style="text-align:left">${esc(x.m.prenom)} ${esc(x.m.nom)}</td><td>${x.rest}</td></tr>`).join("")||'<tr><td colspan=2>Aucun membre</td></tr>'}</table></div>`;openModal()}
+async function moveToTrash(record,type){await idbPut({id:crypto.randomUUID(),type,data:record,deletedAt:new Date().toISOString()},"trash")}
+async function delMember(){if(confirm("Supprimer ce membre ? Il sera déplacé dans la corbeille (menu Maîtrise).")){await moveToTrash(cur,"member");db.members=db.members.filter(x=>x.id!==cur.id);await idbDelete(cur.id);closeModal();renderMembers()}}
+async function quickDeleteMember(id){if(!confirm("Supprimer ce profil ? Il sera déplacé dans la corbeille (menu Maîtrise).")){return}let m=db.members.find(x=>x.id===id);if(!m)return;await moveToTrash(m,"member");db.members=db.members.filter(x=>x.id!==id);await idbDelete(id);closeModal();renderMembers()}
+async function openTrash(){let items=(await idbGetAll("trash")).sort((a,b)=>(b.deletedAt||"").localeCompare(a.deletedAt||""));
+let label=it=>it.type==="member"?`${it.data.prenom||""} ${it.data.nom||""}`.trim():it.type==="chief"?`${it.data.prenom||""} ${it.data.nom||""} (Maîtrise)`.trim():"Élément";
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Corbeille</h2>
+<p style="color:var(--muted);margin-top:-6px;font-size:13px">Les profils supprimés restent ici jusqu'à suppression définitive.</p>
+${items.map(it=>`<div class=panel style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap"><div><b>${esc(label(it))}</b><div style="font-size:12px;color:var(--muted)">Supprimé le ${esc((it.deletedAt||"").slice(0,10))}</div></div><div style="display:flex;gap:6px"><button class=secondary onclick="restoreTrash('${it.id}')">Restaurer</button><button class=danger onclick="purgeTrash('${it.id}')">Supprimer définitivement</button></div></div>`).join("")||'<p style="color:var(--muted)">La corbeille est vide.</p>'}`;openModal()}
+async function restoreTrash(id){let items=await idbGetAll("trash"),it=items.find(x=>x.id===id);if(!it)return;
+if(it.type==="member"){db.members.push(it.data);await idbPut(it.data)}else if(it.type==="chief"){db.maitrise.push(it.data);await idbPut(it.data,"maitrise")}
+await idbDelete(id,"trash");renderMembers();openTrash()}
+async function purgeTrash(id){if(!confirm("Supprimer définitivement ? Cette action est irréversible."))return;await idbDelete(id,"trash");openTrash()}
+async function exportMemberPDF(share){if(!cur){alert("Aucun membre sélectionné.");return}
+let {jsPDF}=window.jspdf,doc=new jsPDF();
+let y=await pdfHeader(doc,cur,"Fiche d'identité — Troupe — Groupe Scout Kafubu Saint Théodore");
+let chef=cur.chefId?db.members.find(x=>x.id===cur.chefId):null;
+let {planned,paid}=finTotals(cur);
+let presCount=(cur.presence||[]).filter(x=>x.present).length;
+let progEtapes=ETAPES.map(e=>{let tmpl=db.templates[e]||[],compl=(cur.evalu&&cur.evalu[e])||{};if(!tmpl.length)return `${e} : 0%`;let tot=tmpl.reduce((a,ep)=>a+(ep.sous.length||1),0),ok=tmpl.reduce((a,ep)=>{let sm=compl[ep.id]||{};return a+(ep.sous.length?ep.sous.filter(s=>sm[s.id]).length:(sm._self?1:0))},0);return `${e} : ${tot?Math.round(ok/tot*100):0}%`}).join("  •  ");
+let rows=[
+["Nom complet",`${cur.prenom||""} ${cur.postnom||""} ${cur.nom||""}`.replace(/\s+/g," ").trim()||"—"],
+["Matricule",matricule(cur)||"—"],
+["Totem",cur.totem||"—"],["Patrouille",cur.patrouille||"—"],["Haute Patrouille",cur.hautePatrouille?"Oui":"Non"],
+["Étape de progression",cur.etape||"—"],["Fonction",cur.fonction||"—"],["Poste",cur.poste||"—"],
+["Chef encadrant",chef?`${chef.prenom} ${chef.nom}`:"—"],["Sexe",cur.sexe||"—"],["Date de naissance",cur.naissance||"—"],
+["Lieu de naissance",cur.lieu||"—"],["Téléphone",cur.tel||"—"],["E-mail",cur.email||"—"],["Adresse",cur.adresse||"—"],
+["Date d'adhésion",cur.adhesion||"—"],["Date de promesse",cur.promesse||"—"],
+["Contact d'urgence",cur.urgenceNom?`${cur.urgenceNom}${cur.urgenceTel?" ("+cur.urgenceTel+")":""}`:"—"],
+["État de santé",cur.sante||"—"],["Allergies",cur.allergies||"—"],
+["Montant total prévu",String(planned)],["Montant total payé",String(paid)],["Reste à payer",String(planned-paid)],
+["Présences enregistrées",String(presCount)],["Progression",progEtapes],
+["Comportement",cur.beh||"—"],["Aptitude",cur.apt||"—"],["Remarques",cur.rem||"—"],["Notes",cur.notes||"—"]];
+doc.autoTable({startY:y+4,body:rows,styles:{fontSize:9,cellPadding:3},columnStyles:{0:{fontStyle:"bold",cellWidth:55,fillColor:[243,239,252]}}});
+let fname=`Fiche_${(cur.prenom||"x").replace(/\s+/g,"_")}_${(cur.nom||"x").replace(/\s+/g,"_")}.pdf`;
+if(share){let blob=doc.output("blob"),file=new File([blob],fname,{type:"application/pdf"});
+if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({title:fname,text:`Fiche de ${cur.prenom} ${cur.nom}`,files:[file]});return}catch(e){if(e&&e.name==="AbortError")return}}
+doc.save(fname);alert("Le partage de fichier n'est pas disponible sur cet appareil : la fiche a été téléchargée à la place.");return}
+doc.save(fname)}
+
+function editPatrouilles(){modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Patrouilles</h2><p style="color:var(--muted);margin-top:-6px;font-size:13px">Modifiez un nom : il est enregistré automatiquement et mis à jour pour tous les jeunes de la patrouille. Vous pouvez aussi ajouter d'autres patrouilles.</p>
+${PATROUILLES.map((p,i)=>{let c=PAT_BASE[i%PAT_BASE.length];return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:34px;height:34px;border-radius:50%;background:${c.bg};border:3px solid ${c.border};flex:0 0 auto"></div><input value="${esc(p)}" onchange="renamePatrouille(${i},this)"></div>`}).join("")}
+<button class="secondary" onclick="addPatrouille()">＋ Ajouter une patrouille</button>
+<div class=autost id=patSt></div>`;openModal()}
+async function addPatrouille(){let nom=prompt("Nom de la nouvelle patrouille :");if(!nom||!nom.trim())return;nom=nom.trim();
+if(PATROUILLES.some(p=>p.toLowerCase()===nom.toLowerCase())){alert("Cette patrouille existe déjà.");return}
+PATROUILLES.push(nom);rebuildPatColors();db.settings.patrouilles=PATROUILLES.slice();await saveSettings();renderMembers();editPatrouilles();
+let st=document.getElementById("patSt");if(st)st.textContent="Patrouille ajoutée et enregistrée"}
+async function renamePatrouille(i,el){let nv=el.value.trim(),old=PATROUILLES[i];
+if(!nv){alert("Le nom ne peut pas être vide.");el.value=old;return}
+if(nv===old)return;
+if(PATROUILLES.some((p,j)=>j!==i&&p.toLowerCase()===nv.toLowerCase())){alert("Ce nom est déjà utilisé par une autre patrouille.");el.value=old;return}
+PATROUILLES[i]=nv;rebuildPatColors();db.members.forEach(m=>{if(m.patrouille===old)m.patrouille=nv});
+db.settings.patrouilles=PATROUILLES.slice();await saveSettings();await save();renderMembers();
+let st=document.getElementById("patSt");if(st)st.textContent="Enregistré automatiquement"}
+
+/* ---------- Documents : importer un fichier et le classer (tri) ---------- */
+function docCats(){let c=db.settings.docCategories;if(!Array.isArray(c)||!c.length){c=db.settings.docCategories=["Non classé"]}return c}
+function fmtSize(n){n=+n||0;return n<1024?n+" o":n<1048576?Math.round(n/1024)+" Ko":(n/1048576).toFixed(1)+" Mo"}
+async function openDocuments(){docsCache=await idbGetAll("documents");renderDocuments()}
+function renderDocuments(){let cats=docCats(),keys=["__all__",...cats];
+if(!keys.includes(docCatSel))docCatSel="__all__";
+let list=docsCache.filter(d=>docCatSel==="__all__"||d.categorie===docCatSel);
+list.sort((a,b)=>docSort==="nom"?(a.nom||"").localeCompare(b.nom||""):(b.date||"").localeCompare(a.date||""));
+let chips=keys.map((k,i)=>`<button class="${docCatSel===k?"":"secondary"}" onclick="setDocCat(${i})">${k==="__all__"?"Tous":esc(k)} (${k==="__all__"?docsCache.length:docsCache.filter(d=>d.categorie===k).length})</button>`).join("");
+let target=docCatSel==="__all__"?cats[0]:docCatSel;
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Documents</h2>
+<div class=panel style="margin-bottom:12px"><label style="margin-top:0">Classer les nouveaux fichiers dans</label>
+<select id=docTarget>${cats.map(c=>`<option ${c===target?"selected":""}>${esc(c)}</option>`).join("")}</select>
+<label>Importer un ou plusieurs fichiers</label><input type=file id=docFile multiple onchange="addDocs(this.files)"></div>
+<div class=chips>${chips}<button class="secondary" onclick="addDocCat()">＋ Catégorie</button></div>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:13px;color:var(--muted)">Trier par</span><select style="width:auto" onchange="docSort=this.value;renderDocuments()"><option value="date" ${docSort==="date"?"selected":""}>Plus récents</option><option value="nom" ${docSort==="nom"?"selected":""}>Nom (A→Z)</option></select>${docCatSel!=="__all__"&&docCatSel!==cats[0]?`<button class="danger" style="padding:7px 10px;font-size:12px" onclick="delDocCat()">Supprimer cette catégorie</button>`:""}</div>
+${list.map(d=>`<div class=panel style="margin-bottom:8px;padding:12px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div style="min-width:0"><b style="word-break:break-word">${esc(d.nom)}</b><div style="font-size:12px;color:var(--muted)">${fmtSize(d.size)} • ${esc((d.date||"").slice(0,10))}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><select onchange="moveDoc('${d.id}',this.value)" style="width:auto;padding:6px">${cats.map(c=>`<option ${c===d.categorie?"selected":""}>${esc(c)}</option>`).join("")}</select><button class=secondary onclick="openDoc('${d.id}')">Ouvrir</button><button class=danger onclick="delDoc('${d.id}')">Supprimer</button></div></div></div>`).join("")||'<div class=panel>Aucun fichier ici pour le moment.</div>'}`;openModal()}
+function setDocCat(i){docCatSel=["__all__",...docCats()][i]||"__all__";renderDocuments()}
+async function addDocs(files){if(!files||!files.length)return;let cat=document.getElementById("docTarget").value||docCats()[0];
+for(const f of files){let rec={id:crypto.randomUUID(),nom:f.name,type:f.type,size:f.size,categorie:cat,date:new Date().toISOString(),blob:new Blob([f],{type:f.type})};await idbPut(rec,"documents");docsCache.push(rec)}
+renderDocuments()}
+async function moveDoc(id,cat){let d=docsCache.find(x=>x.id===id);if(!d)return;d.categorie=cat;await idbPut(d,"documents");renderDocuments()}
+function openDoc(id){let d=docsCache.find(x=>x.id===id);if(!d)return;let url=URL.createObjectURL(d.blob),a=document.createElement("a");a.href=url;a.download=d.nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),8000)}
+async function delDoc(id){if(!confirm("Supprimer ce fichier ?"))return;await idbDelete(id,"documents");docsCache=docsCache.filter(x=>x.id!==id);renderDocuments()}
+async function addDocCat(){let n=prompt("Nom de la nouvelle catégorie :");if(!n||!n.trim())return;n=n.trim();let c=docCats();if(c.some(x=>x.toLowerCase()===n.toLowerCase())){alert("Cette catégorie existe déjà.");return}c.push(n);docCatSel=n;await saveSettings();renderDocuments()}
+async function delDocCat(){let c=docCats(),cat=docCatSel;if(!confirm("Supprimer la catégorie « "+cat+" » ? Ses fichiers iront dans « "+c[0]+" ».")) return;
+for(const d of docsCache){if(d.categorie===cat){d.categorie=c[0];await idbPut(d,"documents")}}
+db.settings.docCategories=c.filter(x=>x!==cat);docCatSel="__all__";await saveSettings();renderDocuments()}
+
+function showYouthList(){
+let byNum=(a,b)=>(+a.num||0)-(+b.num||0);
+let groups=PATROUILLES.map(p=>({p,members:db.members.filter(m=>m.patrouille===p).sort(byNum)}));
+let sans=db.members.filter(m=>!m.patrouille||!PATROUILLES.includes(m.patrouille)).sort(byNum);
+let tbl=list=>`<div class=tablewrap><table class=table><tr><th style="text-align:left">Nom</th><th style="text-align:left">Postnom</th><th style="text-align:left">Prénom</th></tr>${list.map(m=>`<tr><td style="text-align:left">${esc(m.nom)}</td><td style="text-align:left">${esc(m.postnom)}</td><td style="text-align:left">${esc(m.prenom)}</td></tr>`).join("")||'<tr><td colspan=3>Aucun membre</td></tr>'}</table></div>`;
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Liste des jeunes par patrouille</h2>
+${groups.map(g=>`<div class=panel style="margin-bottom:12px"><h3 style="margin-top:0">${patBadge(g.p)} <span style="font-size:13px;color:var(--muted);font-weight:600">(${g.members.length})</span></h3>${tbl(g.members)}</div>`).join("")}
+${sans.length?`<div class=panel><h3 style="margin-top:0">Sans patrouille <span style="font-size:13px;color:var(--muted);font-weight:600">(${sans.length})</span></h3>${tbl(sans)}</div>`:""}
+<br><button onclick="exportYouthListPDF()">Télécharger en PDF</button>`;openModal()}
+function exportYouthListPDF(){
+let byNum=(a,b)=>(+a.num||0)-(+b.num||0),body=[];
+let row=(pn,m)=>body.push([pn,m.nom||"",m.postnom||"",m.prenom||""]);
+PATROUILLES.forEach(pn=>{db.members.filter(m=>m.patrouille===pn).sort(byNum).forEach(m=>row(pn,m))});
+db.members.filter(m=>!m.patrouille||!PATROUILLES.includes(m.patrouille)).sort(byNum).forEach(m=>row("Sans patrouille",m));
+if(!body.length){alert("Aucun membre à exporter.");return}
+let {jsPDF}=window.jspdf,doc=new jsPDF();
+doc.setFontSize(16);doc.text("Liste des jeunes par patrouille",14,16);
+doc.autoTable({head:[["Patrouille","Nom","Postnom","Prénom"]],body,startY:22,styles:{fontSize:9}});
+doc.save("Liste_jeunes_par_patrouille.pdf")}
+function showGeneralList(){
+let list=db.members.slice().sort((a,b)=>(+a.num||0)-(+b.num||0));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Liste générale</h2>
+<p style="color:var(--muted);margin-top:-6px;font-size:13px">Numéro, nom complet et matricule de chaque jeune, dans l'ordre d'enregistrement.</p>
+<div class=tablewrap><table class=table><tr><th>N°</th><th style="text-align:left">Nom</th><th style="text-align:left">Postnom</th><th style="text-align:left">Prénom</th><th>Matricule</th></tr>${list.map(m=>`<tr><td>${m.num||"—"}</td><td style="text-align:left">${esc(m.nom)}</td><td style="text-align:left">${esc(m.postnom)}</td><td style="text-align:left">${esc(m.prenom)}</td><td>${esc(matricule(m))}</td></tr>`).join("")||'<tr><td colspan=5>Aucun membre</td></tr>'}</table></div>
+<br><button onclick="exportGeneralListPDF()">Télécharger en PDF</button>`;openModal()}
+function exportGeneralListPDF(){
+let list=db.members.slice().sort((a,b)=>(+a.num||0)-(+b.num||0));
+if(!list.length){alert("Aucun membre à exporter.");return}
+let {jsPDF}=window.jspdf,doc=new jsPDF();
+doc.setFontSize(16);doc.text("Liste générale",14,16);
+doc.autoTable({head:[["N°","Nom","Postnom","Prénom","Matricule"]],body:list.map(m=>[m.num||"—",m.nom||"",m.postnom||"",m.prenom||"",matricule(m)]),startY:22,styles:{fontSize:9}});
+doc.save("Liste_generale.pdf")}
+
+/* ---------- Maîtrise (équipe des chefs, accès protégé) ---------- */
+function openMaitrise(){if(maitriseUnlocked){enterMaitrise();renderMaitrise()}else askMaitriseCode()}
+function askMaitriseCode(){modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Accès Maîtrise</h2><p style="color:var(--muted);margin-top:-6px">Espace réservé à l'équipe des chefs. Entrez le code d'accès pour continuer.</p><div id=codeErr style="color:#a52b2b;font-weight:700;margin-bottom:6px"></div><label>Code d'accès</label><input type=password id=f_code placeholder="Code" oninput="checkMaitriseCode()">`;openModal();setTimeout(()=>document.getElementById("f_code")?.focus(),50)}
+function checkMaitriseCode(){let i=document.getElementById("f_code"),v=i.value,code=db.settings.code||"1234";
+if(v===code){maitriseUnlocked=true;closeModal();enterMaitrise();renderMaitrise();return}
+if(v.length>=code.length){document.getElementById("codeErr").textContent="Code incorrect.";i.value=""}}
+function lockMaitrise(){maitriseUnlocked=false;exitMaitrise()}
+function renderMaitrise(){let q=(document.getElementById("qm")?.value||"").toLowerCase();
+let list=db.maitrise.filter(m=>(m.nom+" "+m.prenom+" "+(m.fonction||"")).toLowerCase().includes(q));
+list.sort((a,b)=>(a.nom||"").localeCompare(b.nom||""));
+document.getElementById("maitrise").innerHTML=list.map(m=>`<div class="story" onclick="chiefProfile('${m.id}')"><div class="ring" style="background:linear-gradient(45deg,#3b0764,#c084fc)"><img src="${m.photo||""}" onerror="this.style.visibility='hidden'"></div><div class="name">${esc(m.prenom)}</div><div class="sub">${esc(m.fonction||"Chef")}</div></div>`).join("")||'<div class="panel">Aucun membre de la Maîtrise. Appuyez sur ＋ pour ajouter un chef.</div>'}
+function chiefForm(id){formChiefId=id||null;let m=id?db.maitrise.find(x=>x.id===id):{};modalbox.innerHTML=`<button class=back onclick="closeForm()">← Retour</button><h2>${id?"Modifier":"Ajouter"} un membre de la Maîtrise</h2>
+<div class=autost id=autoSt>${id?"Enregistrement automatique activé.":"Enregistrement automatique : remplissez Fonction, Nom et Prénom."}</div>
+<div id="formErrC" style="color:#a52b2b;font-weight:700;margin-bottom:6px"></div>
+<label>Fonction *</label><select id=fc_fonction>${["",...FONCTIONS_MAITRISE].map(s=>`<option value="${s}" ${m.fonction===s?"selected":""}>${s||"— Choisir —"}</option>`).join("")}</select>
+${[['nom','Nom *'],['postnom','Postnom'],['prenom','Prénom *'],['totem','Totem'],['qualificatif','Qualificatif']].map(([k,l])=>`<label>${l}</label><input id=fc_${k} value="${esc(m[k])}">`).join("")}
+<label>Téléphone</label><input id=fc_tel value="${esc(m.tel)}">
+<label>E-mail</label><input id=fc_email value="${esc(m.email)}">
+<label>Adresse</label><input id=fc_adresse value="${esc(m.adresse)}">
+<label>Contact d'urgence — Nom</label><input id=fc_urgenceNom value="${esc(m.urgenceNom)}">
+<label>Contact d'urgence — Téléphone</label><input id=fc_urgenceTel value="${esc(m.urgenceTel)}">
+<label>Notes</label><textarea id=fc_notes>${esc(m.notes)}</textarea>
+<label>Photo</label><input type=file id=fc_photo accept="image/jpeg,image/png,image/webp"><br><br><button onclick="saveChief()">Terminer</button>`;openModal()}
+async function persistChief(){
+if(!document.getElementById("fc_nom"))return null;
+let nom=fc_nom.value.trim(),prenom=fc_prenom.value.trim(),fonction=fc_fonction.value;
+if(!nom||!prenom||!fonction)return null;
+let m=formChiefId?db.maitrise.find(x=>x.id===formChiefId):null,isNew=!m;
+if(isNew)m={id:crypto.randomUUID(),finance:[],presence:[]};
+["fonction","nom","postnom","prenom","totem","qualificatif","tel","email","adresse","urgenceNom","urgenceTel","notes"].forEach(k=>m[k]=document.getElementById("fc_"+k).value);
+let f=fc_photo.files[0];
+if(f){m.photo=await new Promise(res=>{let r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});fc_photo.value=""}
+if(isNew){db.maitrise.push(m);formChiefId=m.id}
+await saveMaitrise();renderMaitrise();
+let st=document.getElementById("autoSt");if(st)st.textContent="Enregistré automatiquement";
+return m}
+async function saveChief(){clearTimeout(autoTimer);let m=await withLock(persistChief);if(!m){let e=document.getElementById("formErrC");if(e)e.textContent="Veuillez remplir les champs obligatoires : Fonction, Nom, Prénom.";return}closeModal()}
+function chiefProfile(id){curChef=db.maitrise.find(x=>x.id===id);curKind="chief";let c=curChef;
+let infos=[];
+if(c.postnom)infos.push(["Postnom",c.postnom]);
+if(c.totem)infos.push(["Totem",c.totem]);
+if(c.qualificatif)infos.push(["Qualificatif",c.qualificatif]);
+if(c.tel)infos.push(["Téléphone",c.tel]);
+if(c.email)infos.push(["E-mail",c.email]);
+if(c.adresse)infos.push(["Adresse",c.adresse]);
+if(c.urgenceNom)infos.push(["Contact d'urgence",`${c.urgenceNom}${c.urgenceTel?" — "+c.urgenceTel:""}`]);
+if(c.notes)infos.push(["Notes",c.notes]);
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button>
+<div class=panel style="text-align:center">
+<img class=avatar src="${c.photo||""}" style="width:120px;height:120px;border-width:4px" onerror="this.style.visibility='hidden'">
+<h2 style="margin:12px 0 4px">${esc(c.prenom)} ${esc(c.nom)}</h2>
+<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap"><span class="badge">${esc(c.fonction||"Chef")}</span></div>
+<div class=infogrid>${infos.map(([l,v])=>`<div class=infoitem><div class=lbl>${esc(l)}</div><div class=val>${esc(v)}</div></div>`).join("")||'<p style="grid-column:1/-1;color:var(--muted)">Aucune information complémentaire renseignée.</p>'}</div>
+</div>
+<div class="stories" style="justify-content:center;margin-top:14px">${modStory("","FINANCE","finance()",MOD_GRAD.finance)}${modStory("","PRÉSENCE","presence()",MOD_GRAD.presence)}</div>
+<br><button onclick="chiefForm('${c.id}')">Modifier</button> <button class="secondary" onclick="exportChiefPDF()">Fiche PDF</button> <button class=danger onclick="delChief()">Supprimer</button>`;openModal()}
+async function exportChiefPDF(){let c=curChef;if(!c){alert("Aucun chef sélectionné.");return}
+let {jsPDF}=window.jspdf,doc=new jsPDF();
+let y=await pdfHeader(doc,c,"Fiche d'identité — Maîtrise — Groupe Scout Kafubu Saint Théodore");
+let {planned,paid}=finTotals(c);
+let presCount=(c.presence||[]).filter(x=>x.present).length;
+let rows=[
+["Nom complet",`${c.prenom||""} ${c.postnom||""} ${c.nom||""}`.replace(/\s+/g," ").trim()||"—"],
+["Fonction",c.fonction||"—"],["Totem",c.totem||"—"],["Qualificatif",c.qualificatif||"—"],
+["Téléphone",c.tel||"—"],["E-mail",c.email||"—"],["Adresse",c.adresse||"—"],
+["Contact d'urgence",c.urgenceNom?`${c.urgenceNom}${c.urgenceTel?" ("+c.urgenceTel+")":""}`:"—"],
+["Montant total prévu",String(planned)],["Montant total payé",String(paid)],["Reste à payer",String(planned-paid)],
+["Présences enregistrées",String(presCount)],["Notes",c.notes||"—"]];
+doc.autoTable({startY:y+4,body:rows,styles:{fontSize:9,cellPadding:3},columnStyles:{0:{fontStyle:"bold",cellWidth:55,fillColor:[243,239,252]}}});
+doc.save(`Fiche_${(c.prenom||"x").replace(/\s+/g,"_")}_${(c.nom||"x").replace(/\s+/g,"_")}.pdf`)}
+async function delChief(){if(confirm("Supprimer ce membre de la Maîtrise ? Il sera déplacé dans la corbeille.")){await moveToTrash(curChef,"chief");db.maitrise=db.maitrise.filter(x=>x.id!==curChef.id);await idbDelete(curChef.id,"maitrise");closeModal();renderMaitrise()}}
+
+function showChiefList(){let list=db.maitrise.slice().sort((a,b)=>(a.fonction||"").localeCompare(b.fonction||"")||(a.nom||"").localeCompare(b.nom||""));
+modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Liste des chefs</h2>
+<div class=tablewrap><table class=table><tr><th style="text-align:left">Fonction</th><th style="text-align:left">Nom</th><th style="text-align:left">Postnom</th><th style="text-align:left">Prénom</th></tr>${list.map(m=>`<tr><td style="text-align:left">${esc(m.fonction)}</td><td style="text-align:left">${esc(m.nom)}</td><td style="text-align:left">${esc(m.postnom)}</td><td style="text-align:left">${esc(m.prenom)}</td></tr>`).join("")||'<tr><td colspan=4>Aucun chef</td></tr>'}</table></div>
+<br><button onclick="exportChiefListPDF()">Télécharger en PDF</button>`;openModal()}
+function exportChiefListPDF(){if(!db.maitrise.length){alert("Aucun chef à exporter.");return}
+let list=db.maitrise.slice().sort((a,b)=>(a.fonction||"").localeCompare(b.fonction||"")||(a.nom||"").localeCompare(b.nom||""));
+let {jsPDF}=window.jspdf,doc=new jsPDF();doc.setFontSize(16);doc.text("Liste des chefs — Maîtrise",14,16);
+doc.autoTable({head:[["Fonction","Nom","Postnom","Prénom"]],body:list.map(m=>[m.fonction||"",m.nom||"",m.postnom||"",m.prenom||""]),startY:22,styles:{fontSize:9}});
+doc.save("Liste_des_chefs.pdf")}
+
+/* ---------- Export Excel ---------- */
+function exportExcel(){
+let rows=db.members.map(m=>{let chef=m.chefId?db.members.find(x=>x.id===m.chefId):null;return {Patrouille:m.patrouille||"","Haute Patrouille":m.hautePatrouille?"Oui":"Non","Étape":m.etape||"",Nom:m.nom||"",Postnom:m.postnom||"",Prénom:m.prenom||"",Totem:m.totem||"",Fonction:m.fonction||"",Poste:m.poste||"","Chef encadrant":chef?`${chef.prenom} ${chef.nom}`:"",Sexe:m.sexe||"",Naissance:m.naissance||"",Lieu:m.lieu||"","État de santé":m.sante||"",Allergies:m.allergies||"",Téléphone:m.tel||"",Email:m.email||"",Adresse:m.adresse||"",Adhésion:m.adhesion||"",Promesse:m.promesse||"","Contact urgence":m.urgenceNom||"","Tél urgence":m.urgenceTel||"",Notes:m.notes||""}});
+if(!rows.length){alert("Aucun membre à exporter.");return}
+let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"Membres");
+XLSX.writeFile(wb,"Troupe_membres.xlsx")}
+
+/* ---------- Export PDF ---------- */
+function exportPDF(){
+if(!db.members.length){alert("Aucun membre à exporter.");return}
+let {jsPDF}=window.jspdf,doc=new jsPDF({orientation:"landscape"});
+doc.setFontSize(16);doc.text("Troupe — Kafubu Saint Théodore",14,14);
+let head=[["Patrouille","HP","Étape","Nom","Postnom","Prénom","Totem","Fonction","Téléphone","Contact urgence"]];
+let body=db.members.map(m=>[m.patrouille||"",m.hautePatrouille?"":"",m.etape||"",m.nom||"",m.postnom||"",m.prenom||"",m.totem||"",m.fonction||"",m.tel||"",m.urgenceNom?`${m.urgenceNom} (${m.urgenceTel||""})`:""]);
+doc.autoTable({head,body,startY:20,styles:{fontSize:8}});
+doc.save("Troupe_membres.pdf")}
+
+/* ---------- Import (Excel ou JSON) ---------- */
+
+/* ---------- Menus déroulants (façon WhatsApp) ---------- */
+function toggleDrop(e,id){e.stopPropagation();document.querySelectorAll(".dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});document.getElementById(id).classList.toggle("open")}
+function closeMenu(){document.querySelectorAll(".dropdown.open").forEach(d=>d.classList.remove("open"))}
+document.addEventListener("click",closeMenu);
+
+/* ---------- Verrouillage de l'écran d'accueil + mots de passe ---------- */
+let appReady=false;
+function lockApp(){maitriseUnlocked=false;inMaitrise=false;closeModal();closeMenu();renderPage('membersPage');let i=document.getElementById("lockInput");document.getElementById("lockScreen").classList.remove("hidden");i.value="";document.getElementById("lockErr").textContent="";setTimeout(()=>i.focus(),50)}
+function unlockApp(){let i=document.getElementById("lockInput"),e=document.getElementById("lockErr");
+if(!appReady)return;
+let code=codeOf("app");
+if(i.value===code){document.getElementById("lockScreen").classList.add("hidden");i.value="";e.textContent="";return}
+if(i.value.length>=code.length){e.textContent="Mot de passe incorrect.";i.value=""}}
+function codeOf(kind){return kind==="app"?(db.settings.appCode||db.settings.code||"1234"):(db.settings.code||"1234")}
+function openOptions(){modalbox.innerHTML=`<button class=back onclick="closeModal()">← Retour</button><h2>Options</h2>
+<div style="display:flex;flex-direction:column;gap:10px">
+<button class="secondary" onclick="changeCodeDialog('app')">Changer le mot de passe de l'application</button>
+<button class="secondary" onclick="changeCodeDialog('maitrise')">Changer le code de la Maîtrise</button>
+<button class="secondary" onclick="lockApp()">Verrouiller l'application maintenant</button>
+</div>`;openModal()}
+function changeCodeDialog(kind){modalbox.innerHTML=`<button class=back onclick="openOptions()">← Retour</button><h2>${kind==="app"?"Mot de passe de l'application":"Code de la Maîtrise"}</h2>
+<div id=ccErr style="color:#a52b2b;font-weight:700;margin-bottom:6px"></div>
+<label>Mot de passe actuel</label><input type=password id=cc_old autocomplete=off>
+<label>Nouveau mot de passe (4 caractères minimum)</label><input type=password id=cc_new autocomplete=off>
+<label>Confirmer le nouveau mot de passe</label><input type=password id=cc_new2 autocomplete=off><br><br>
+<button onclick="saveCode('${kind}')">Enregistrer</button>`;openModal()}
+async function saveCode(kind){let o=cc_old.value,n=cc_new.value,n2=cc_new2.value,e=document.getElementById("ccErr");
+if(o!==codeOf(kind)){e.textContent="Le mot de passe actuel est incorrect.";return}
+if(n.length<4){e.textContent="Le nouveau mot de passe doit avoir au moins 4 caractères.";return}
+if(n!==n2){e.textContent="La confirmation ne correspond pas.";return}
+if(kind==="app")db.settings.appCode=n;else db.settings.code=n;
+await saveSettings();alert("Mot de passe mis à jour");openOptions()}
+
+/* ---------- Titre modifiable + année et thèmes ---------- */
+async function saveTroupeNom(el){let v=el.textContent.replace(/\s+/g," ").trim();if(!v)v=db.settings.troupeNom||"Troupe";el.textContent=v;db.settings.troupeNom=v;await saveSettings()}
+let yearTimer=null;
+function saveYearInfo(){clearTimeout(yearTimer);yearTimer=setTimeout(async()=>{db.settings.annee=document.getElementById("setAnnee").value;db.settings.themeGeneral=document.getElementById("setThemeG").value;db.settings.themeBranche=document.getElementById("setThemeB").value;await saveSettings()},400)}
+function fillHomeFields(){let t=document.getElementById("troupeNom");if(t&&db.settings.troupeNom)t.textContent=db.settings.troupeNom;
+document.getElementById("setAnnee").value=db.settings.annee||"";document.getElementById("setThemeG").value=db.settings.themeGeneral||"";document.getElementById("setThemeB").value=db.settings.themeBranche||""}
+
+/* ---------- Démarrage ---------- */
+modalbox.addEventListener("input",scheduleAuto);modalbox.addEventListener("change",scheduleAuto);
+(async function init(){
+try{await loadAll()}catch(e){console.error("IndexedDB indisponible",e);alert("Le stockage local (IndexedDB) n'a pas pu être initialisé. Les données ne seront pas sauvegardées sur cet appareil.")}
+appReady=true;fillHomeFields();renderMembers();renderHome();go('homePage');
+setTimeout(()=>{let i=document.getElementById("lockInput");if(i)i.focus()},100);
+})();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("service-worker.js").catch(e=>console.error("Service worker non enregistré",e))})}
+</script>
+</body></html>
